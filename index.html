@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    <title>Quizzy · by Insha Mahfooz</title>
+    <!-- Cropper.js CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #2c1810; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; position: fixed; top: 0; left: 0; }
+        .app-card {
+            width: 100%;
+            height: 100dvh;
+            max-height: 100dvh;
+            max-width: 100vw;
+            background: linear-gradient(165deg, #f5ebe0 0%, #e8d5c4 40%, #d4b8a0 100%);
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            padding: 12px 16px 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            transition: none;
+        }
+        /* loading, splash, screens, etc. */
+        #loadingOverlay, #splashOverlay { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; transition: opacity 0.6s, transform 0.6s; opacity: 1; pointer-events: auto; text-align: center; padding: 30px 20px; border-radius: 0; width: 100%; height: 100%; gap: 24px; }
+        #loadingOverlay.hidden, #splashOverlay.hidden { opacity: 0; pointer-events: none; transform: scale(0.97); }
+        .spinner { width: 52px; height: 52px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid #fff; border-radius: 50%; animation: spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loadingOverlay .loading-text { display: none; }
+        #splashOverlay { background: #2c1810; z-index: 50; }
+        .splash-title { font-size: 3.6rem; font-weight: 700; letter-spacing: -1px; background: linear-gradient(135deg, #e8c9b0 0%, #c8956e 50%, #e8c9b0 100%); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 4s ease-in-out infinite; }
+        @keyframes shimmer { 0% { background-position: 0% center; } 50% { background-position: 100% center; } 100% { background-position: 0% center; } }
+        .splash-sub { font-size: 0.95rem; color: rgba(200,180,160,0.3); font-weight: 300; letter-spacing: 4px; text-transform: uppercase; margin-top: 6px; }
+        .splash-made { margin-top: 32px; font-size: 0.8rem; color: rgba(200,180,160,0.15); border-top: 1px solid rgba(200,180,160,0.06); padding-top: 22px; width: 55%; letter-spacing: 0.5px; }
+        .splash-made span { color: rgba(200,180,160,0.25); font-weight: 400; }
+        .screen { display: none; flex-direction: column; flex: 1; gap: 8px; animation: fadeSlide 0.4s cubic-bezier(0.25,0.46,0.45,0.94); overflow: hidden; min-height: 0; }
+        .screen.active { display: flex; }
+        @keyframes fadeSlide { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+        .shiny-text { display: inline-block; background-image: linear-gradient(115deg, #8b6b50 0%, #8b6b50 30%, #c8956e 50%, #8b6b50 70%, #8b6b50 100%); background-size: 250% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shineMove 4s linear infinite; font-weight: 700; letter-spacing: -0.5px; }
+        @keyframes shineMove { 0% { background-position: 200% center; } 100% { background-position: -100% center; } }
+        .shiny-prompt { display: inline-block; background-image: linear-gradient(115deg, #5a3d2b 0%, #5a3d2b 25%, #c8956e 45%, #8b6b50 65%, #5a3d2b 100%); background-size: 300% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shinePrompt 5s linear infinite; font-weight: 700; letter-spacing: -0.3px; }
+        @keyframes shinePrompt { 0% { background-position: 200% center; } 100% { background-position: -100% center; } }
+        .avatar-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 0; padding: 4px 0; }
+        .avatar-3d { width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #f5ebe0, #d4b8a0); display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 12px 40px rgba(139,107,80,0.2), inset 0 -4px 20px rgba(139,107,80,0.1); animation: float 3s ease-in-out infinite; transform-style: preserve-3d; perspective: 500px; }
+        @keyframes float { 0%,100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+        .avatar-3d .face { font-size: 5rem; line-height: 1; animation: wave 2s ease-in-out infinite; transform-origin: bottom center; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.05)); }
+        @keyframes wave { 0%,100% { transform: rotate(-5deg) scale(1); } 25% { transform: rotate(10deg) scale(1.05); } 50% { transform: rotate(-8deg) scale(0.98); } 75% { transform: rotate(12deg) scale(1.03); } }
+        .avatar-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 3px solid rgba(139,107,80,0.08); animation: spinRing 8s linear infinite; pointer-events: none; }
+        .avatar-ring:nth-child(2) { width: 90%; height: 90%; border-color: rgba(139,107,80,0.05); animation-duration: 6s; animation-direction: reverse; }
+        @keyframes spinRing { 0% { transform: rotate(0deg) scale(1); } 100% { transform: rotate(360deg) scale(1); } }
+        .avatar-dots { position: absolute; width: 120%; height: 120%; border-radius: 50%; animation: spinDots 12s linear infinite; pointer-events: none; }
+        .avatar-dots span { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: rgba(139,107,80,0.15); top: 50%; left: 50%; transform-origin: center center; }
+        .avatar-dots span:nth-child(1) { transform: translate(-50%,-50%) rotate(0deg) translateX(90px); }
+        .avatar-dots span:nth-child(2) { transform: translate(-50%,-50%) rotate(60deg) translateX(90px); }
+        .avatar-dots span:nth-child(3) { transform: translate(-50%,-50%) rotate(120deg) translateX(90px); }
+        .avatar-dots span:nth-child(4) { transform: translate(-50%,-50%) rotate(180deg) translateX(90px); }
+        .avatar-dots span:nth-child(5) { transform: translate(-50%,-50%) rotate(240deg) translateX(90px); }
+        .avatar-dots span:nth-child(6) { transform: translate(-50%,-50%) rotate(300deg) translateX(90px); }
+        @keyframes spinDots { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .speech-bubble { background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); border-radius: 20px; padding: 10px 20px; margin-top: 10px; font-size: 0.95rem; color: #5a3d2b; border: 0.5px solid rgba(255,255,255,0.08); animation: bubblePulse 3s ease-in-out infinite; text-align: center; max-width: 280px; }
+        .speech-bubble .highlight { font-weight: 600; color: #8b6b50; }
+        @keyframes bubblePulse { 0%,100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.02); opacity: 1; } }
+        .greeting-message { font-size: 1.1rem; font-weight: 500; color: #5a3d2b; background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 20px; padding: 12px 18px; border: 0.5px solid rgba(255,255,255,0.08); text-align: center; line-height: 1.5; flex-shrink: 0; }
+        .greeting-message .highlight-name { font-weight: 700; color: #8b6b50; background: rgba(139,107,80,0.08); padding: 2px 10px; border-radius: 12px; }
+        .greeting-message .greeting-icon { font-size: 1.3rem; margin-right: 4px; }
+        .title { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; color: #5a3d2b; }
+        .subtitle { font-size: 0.95rem; color: rgba(90,61,43,0.6); font-weight: 400; letter-spacing: 0.2px; }
+        .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 2px 0 4px; }
+        .badge { background: rgba(90,61,43,0.08); padding: 7px 18px; border-radius: 40px; font-size: 0.78rem; font-weight: 400; color: rgba(90,61,43,0.6); backdrop-filter: blur(4px); border: 0.5px solid rgba(90,61,43,0.06); letter-spacing: 0.3px; }
+        .btn { width: 100%; padding: 17px 12px; border: none; border-radius: 60px; background: linear-gradient(135deg, #a67b5e, #8b6b50); color: #f5ebe0; font-weight: 600; font-size: 1.1rem; letter-spacing: 0.4px; box-shadow: 0 8px 28px rgba(139,107,80,0.25); transition: all 0.2s cubic-bezier(0.25,0.46,0.45,0.94); cursor: pointer; touch-action: manipulation; user-select: none; text-align: center; border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; position: relative; overflow: hidden; }
+        .btn::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%); opacity: 0; transition: opacity 0.3s ease; }
+        .btn:active::after { opacity: 1; }
+        .btn:active { transform: scale(0.96); box-shadow: 0 4px 16px rgba(139,107,80,0.3); }
+        .btn-secondary { background: rgba(90,61,43,0.06); color: #6b4d38; box-shadow: none; border: 1px solid rgba(90,61,43,0.08); backdrop-filter: blur(4px); }
+        .btn-secondary:active { background: rgba(90,61,43,0.12); }
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); border-radius: 20px; padding: 16px 20px; border: 0.5px solid rgba(255,255,255,0.06); transition: all 0.2s ease; }
+        .toggle-container:active { transform: scale(0.98); }
+        .toggle-info { display: flex; align-items: center; gap: 14px; flex: 1; }
+        .toggle-icon { display: none !important; }
+        .toggle-label { display: flex; flex-direction: column; flex: 1; }
+        .toggle-title { font-weight: 600; color: #4a3222; font-size: 1rem; }
+        .toggle-desc { font-size: 0.75rem; color: rgba(90,61,43,0.45); margin-top: 1px; }
+        .switch { position: relative; width: 50px; height: 28px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(139,107,80,0.15); border-radius: 34px; transition: 0.3s ease; }
+        .slider::before { content: ''; position: absolute; height: 22px; width: 22px; left: 3px; bottom: 3px; background: #f5ebe0; border-radius: 50%; transition: 0.3s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .switch input:checked + .slider { background: #a67b5e; }
+        .switch input:checked + .slider::before { transform: translateX(22px); background: #ffffff; }
+        .switch input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
+        .settings-section { display: flex; flex-direction: column; gap: 14px; flex: 1; overflow-y: auto; padding: 4px 0; }
+        .settings-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; margin-bottom: 4px; padding-right: 4px; }
+        .settings-header .shiny-prompt { font-size: 1.4rem; }
+        .settings-close { background: rgba(90,61,43,0.06); border: 1px solid rgba(90,61,43,0.06); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #6b4d38; cursor: pointer; touch-action: manipulation; transition: all 0.2s ease; backdrop-filter: blur(4px); padding: 0; line-height: 1; flex-shrink: 0; }
+        .settings-close:active { transform: scale(0.88); background: rgba(90,61,43,0.12); }
+        .settings-group { background: rgba(255,255,255,0.05); border-radius: 24px; padding: 14px 16px; border: 0.5px solid rgba(255,255,255,0.04); }
+        .settings-group-title { font-size: 0.7rem; font-weight: 600; color: rgba(90,61,43,0.3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+        .settings-group .toggle-container:not(:last-child) { border-bottom: 0.5px solid rgba(90,61,43,0.04); border-radius: 0; padding-bottom: 14px; margin-bottom: 10px; }
+        .settings-group .toggle-container:last-child { padding-bottom: 0; margin-bottom: 0; }
+        .exit-btn { position: absolute; top: 12px; right: 16px; z-index: 10; background: rgba(90,61,43,0.08); border: 1px solid rgba(90,61,43,0.08); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 300; color: #6b4d38; cursor: pointer; touch-action: manipulation; transition: all 0.2s ease; backdrop-filter: blur(4px); padding: 0; line-height: 1; }
+        .exit-btn:active { transform: scale(0.88); background: rgba(90,61,43,0.15); }
+        #exitPopup, #submitPopup, #claimPopup, #toastPopup, #resultSummaryPopup, #birthdayPopup { position: absolute; inset: 0; background: rgba(44,24,16,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 30px; border-radius: 0; animation: fadeSlide 0.3s ease; }
+        #exitPopup.active, #submitPopup.active, #claimPopup.active, #resultSummaryPopup.active, #birthdayPopup.active { display: flex; }
+        #submitPopup { z-index: 150; }
+        #claimPopup { z-index: 160; }
+        #resultSummaryPopup { z-index: 170; }
+        #birthdayPopup { z-index: 175; }
+        #toastPopup {
+            z-index: 300;
+            background: rgba(44,24,16,0.3);
+            backdrop-filter: blur(2px);
+            pointer-events: none;
+            animation: toastFade 2.5s ease forwards;
+            display: flex;
+            opacity: 0;
+        }
+        #toastPopup.show { display: flex; opacity: 1; }
+        @keyframes toastFade { 0% { opacity: 0; transform: scale(0.8); } 15% { opacity: 1; transform: scale(1); } 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.9); } }
+        .toast-box { background: #f5ebe0; border-radius: 28px; padding: 24px 28px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(44,24,16,0.4); border: 1px solid rgba(139,107,80,0.1); pointer-events: none; }
+        .toast-box .toast-icon { font-size: 3rem; margin-bottom: 4px; }
+        .toast-box .toast-title { font-size: 1.2rem; font-weight: 700; color: #5a3d2b; }
+        .toast-box .toast-msg { font-size: 0.95rem; color: rgba(90,61,43,0.7); margin-top: 4px; }
+        .popup-box { background: #f5ebe0; border-radius: 32px; padding: 32px 28px 28px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(44,24,16,0.4); border: 1px solid rgba(139,107,80,0.1); }
+        .popup-title { font-size: 1.4rem; font-weight: 600; color: #5a3d2b; margin-bottom: 6px; }
+        .popup-sub { font-size: 0.95rem; color: rgba(90,61,43,0.6); margin-bottom: 20px; }
+        .popup-buttons { display: flex; gap: 12px; }
+        .popup-buttons .btn { flex: 1; padding: 14px 10px; font-size: 1rem; }
+        .btn-danger { background: linear-gradient(135deg, #b86b6b, #a05555); box-shadow: 0 8px 28px rgba(160,85,85,0.25); }
+        .btn-danger:active { box-shadow: 0 4px 16px rgba(160,85,85,0.3); }
+        .btn-success { background: linear-gradient(135deg, #4caf50, #2e7d32); box-shadow: 0 8px 28px rgba(46,125,50,0.25); }
+        .btn-success:active { box-shadow: 0 4px 16px rgba(46,125,50,0.3); }
+        .btn-gold { background: linear-gradient(135deg, #f5c542, #e6b422); color: #2c1810; box-shadow: 0 8px 28px rgba(245,197,66,0.3); }
+        .btn-gold:active { box-shadow: 0 4px 16px rgba(245,197,66,0.4); transform: scale(0.96); }
+        .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; align-content: start; padding: 8px 0; overflow-y: auto; }
+        .category-card { background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 28px; padding: 24px 16px 20px; text-align: center; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; touch-action: manipulation; transition: all 0.25s cubic-bezier(0.25,0.46,0.45,0.94); box-shadow: 0 4px 16px rgba(0,0,0,0.04); min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .category-card:active { transform: scale(0.94); background: rgba(255,255,255,0.25); }
+        .category-icon-svg { width: 48px; height: 48px; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }
+        .category-icon-svg svg { width: 100%; height: 100%; }
+        .category-name { font-weight: 600; color: #4a3222; font-size: 1rem; letter-spacing: 0.2px; }
+        .category-count { font-size: 0.65rem; color: rgba(90,61,43,0.4); margin-top: 4px; font-weight: 400; letter-spacing: 0.3px; }
+        .account-section { display: flex; flex-direction: column; gap: 14px; flex: 1; overflow-y: auto; padding: 4px 0; }
+        .account-header { background: rgba(255,255,255,0.15); border-radius: 28px; padding: 20px; text-align: center; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); position: relative; transition: all 0.3s ease; }
+        .account-header.vip { background: linear-gradient(135deg, #f9e6b3, #f5d08a); box-shadow: 0 0 30px rgba(255,215,0,0.3); border-color: #f5c542; }
+        .account-header.vip .account-name { color: #b8860b; text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+        .account-header.birthday { background: linear-gradient(135deg, #ffe5b4, #ffd700); box-shadow: 0 0 40px rgba(255,215,0,0.5); border-color: #ffd700; animation: birthdayGlow 1.5s ease-in-out infinite; }
+        .account-header.birthday .account-name { color: #b8860b; text-shadow: 0 0 30px rgba(255,215,0,0.5); }
+        .account-header.birthday .vip-badge { background: #ffd700; color: #2c1810; box-shadow: 0 0 30px rgba(255,215,0,0.6); }
+        @keyframes birthdayGlow { 0%,100% { box-shadow: 0 0 30px rgba(255,215,0,0.3); } 50% { box-shadow: 0 0 60px rgba(255,215,0,0.6); } }
+        .vip-badge { position: absolute; top: 8px; right: 12px; background: #f5c542; color: #2c1810; font-size: 0.65rem; font-weight: 700; padding: 2px 12px; border-radius: 30px; letter-spacing: 0.5px; box-shadow: 0 0 20px rgba(245,197,66,0.4); }
+        .birthday-badge { position: absolute; top: 8px; left: 12px; background: #ffd700; color: #2c1810; font-size: 0.65rem; font-weight: 700; padding: 2px 12px; border-radius: 30px; letter-spacing: 0.5px; box-shadow: 0 0 20px rgba(255,215,0,0.5); animation: sparkle 1s ease-in-out infinite; }
+        @keyframes sparkle { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .account-avatar-wrapper { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 8px; overflow: hidden; border: 3px solid rgba(139,107,80,0.2); background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; position: relative; }
+        .account-avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .account-avatar-wrapper .avatar-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #e8d5c4; }
+        .account-avatar-wrapper .avatar-placeholder img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .account-name { font-size: 1.3rem; font-weight: 600; color: #4a3222; transition: color 0.3s; }
+        .account-email { font-size: 0.85rem; color: rgba(90,61,43,0.5); margin-top: 2px; }
+        .account-menu { display: flex; flex-direction: column; gap: 10px; }
+        .menu-item { background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); border-radius: 20px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; border: 1px solid rgba(255,255,255,0.06); cursor: pointer; touch-action: manipulation; transition: all 0.2s cubic-bezier(0.25,0.46,0.45,0.94); }
+        .menu-item:active { transform: scale(0.97); background: rgba(255,255,255,0.2); }
+        .menu-icon { font-size: 1.6rem; width: 36px; text-align: center; }
+        .menu-text { flex: 1; }
+        .menu-title { font-weight: 600; color: #4a3222; font-size: 1rem; }
+        .menu-desc { font-size: 0.75rem; color: rgba(90,61,43,0.45); margin-top: 1px; }
+        .menu-arrow { color: rgba(90,61,43,0.2); font-size: 1.2rem; }
+        #profileFormOverlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(44,24,16,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            border-radius: 0;
+            animation: fadeSlide 0.3s ease;
+        }
+        #profileFormOverlay.active { display: flex; }
+        #onboardingOverlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(44,24,16,0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            border-radius: 0;
+            animation: fadeSlide 0.4s ease;
+        }
+        #onboardingOverlay.active { display: flex; }
+        .onboarding-box {
+            background: #f5ebe0;
+            border-radius: 32px;
+            padding: 28px 24px 24px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(44,24,16,0.6);
+            border: 1px solid rgba(139,107,80,0.1);
+        }
+        .onboarding-box .onboard-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #5a3d2b;
+            text-align: center;
+        }
+        .onboarding-box .onboard-sub {
+            font-size: 0.9rem;
+            color: rgba(90,61,43,0.5);
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .profile-form-box { background: #f5ebe0; border-radius: 32px; padding: 24px 20px 20px; max-width: 420px; width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(44,24,16,0.5); border: 1px solid rgba(139,107,80,0.1); }
+        .form-title { font-size: 1.5rem; font-weight: 700; color: #5a3d2b; text-align: center; margin-bottom: 4px; }
+        .form-sub { font-size: 0.85rem; color: rgba(90,61,43,0.5); text-align: center; margin-bottom: 16px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #5a3d2b; margin-bottom: 5px; }
+        .form-input { width: 100%; padding: 13px 16px; border: 1.5px solid rgba(139,107,80,0.15); border-radius: 16px; font-size: 1rem; background: rgba(255,255,255,0.5); backdrop-filter: blur(4px); color: #3d2a1c; transition: border-color 0.2s ease; outline: none; }
+        .form-input:focus { border-color: #a67b5e; background: rgba(255,255,255,0.7); }
+        .form-input::placeholder { color: rgba(90,61,43,0.3); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .photo-upload-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .photo-preview { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid rgba(139,107,80,0.2); background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+        .photo-preview:active { transform: scale(0.95); }
+        .photo-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .photo-preview .placeholder { font-size: 3.5rem; line-height: 1; }
+        .photo-upload-btn { background: rgba(90,61,43,0.08); border: 1px solid rgba(90,61,43,0.1); border-radius: 40px; padding: 8px 24px; font-size: 0.85rem; color: #5a3d2b; cursor: pointer; touch-action: manipulation; transition: all 0.2s ease; }
+        .photo-upload-btn:active { transform: scale(0.95); background: rgba(90,61,43,0.15); }
+        #photoInput { display: none; }
+        .form-actions { display: flex; gap: 12px; margin-top: 6px; }
+        .form-actions .btn { flex: 1; padding: 15px 10px; font-size: 1rem; }
+        .btn-cancel { background: rgba(90,61,43,0.08); color: #6b4d38; box-shadow: none; border: 1px solid rgba(90,61,43,0.08); }
+        .btn-cancel:active { background: rgba(90,61,43,0.15); }
+        .progress-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .progress-stat-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); border-radius: 20px; padding: 14px 12px; text-align: center; border: 0.5px solid rgba(255,255,255,0.04); }
+        .progress-stat-number { font-size: 1.8rem; font-weight: 700; color: #4a3222; line-height: 1.2; }
+        .progress-stat-label { font-size: 0.65rem; color: rgba(90,61,43,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        .progress-chart-container { background: rgba(255,255,255,0.06); border-radius: 20px; padding: 14px 16px; border: 0.5px solid rgba(255,255,255,0.04); flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .progress-chart-title { font-size: 0.75rem; font-weight: 600; color: rgba(90,61,43,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; flex-shrink: 0; }
+        .chart-bars { display: flex; align-items: flex-end; justify-content: space-around; flex: 1; min-height: 0; padding: 4px 0; gap: 6px; }
+        .chart-bar-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
+        .chart-bar { width: 100%; max-width: 36px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #c8956e, #a67b5e); min-height: 4px; transition: height 0.8s cubic-bezier(0.25,0.46,0.45,0.94); position: relative; }
+        .chart-bar-label { font-size: 0.5rem; color: rgba(90,61,43,0.4); margin-top: 4px; text-align: center; font-weight: 500; letter-spacing: 0.3px; }
+        .progress-ring-container { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 8px 0; flex-shrink: 0; }
+        .progress-ring { width: 80px; height: 80px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .progress-ring .bg { fill: none; stroke: rgba(139,107,80,0.1); stroke-width: 6; }
+        .progress-ring .progress { fill: none; stroke: #a67b5e; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.25,0.46,0.45,0.94); }
+        .progress-ring-text { position: absolute; font-size: 1.2rem; font-weight: 700; color: #4a3222; }
+        .progress-ring-label { font-size: 0.6rem; color: rgba(90,61,43,0.4); text-align: center; letter-spacing: 0.5px; }
+        .quiz-banner { background: linear-gradient(135deg, rgba(139,107,80,0.08), rgba(200,149,110,0.08)); border-radius: 20px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; border: 0.5px solid rgba(139,107,80,0.06); backdrop-filter: blur(4px); margin-top: -2px; }
+        .banner-icon-svg { width: 44px; height: 44px; flex-shrink: 0; }
+        .banner-icon-svg svg { width: 100%; height: 100%; }
+        .banner-info { flex: 1; }
+        .banner-title { font-weight: 600; color: #4a3222; font-size: 1rem; letter-spacing: 0.3px; }
+        .banner-sub { font-size: 0.75rem; color: rgba(90,61,43,0.5); margin-top: 1px; }
+        .banner-progress { font-size: 0.8rem; font-weight: 600; color: #a67b5e; background: rgba(139,107,80,0.08); padding: 4px 14px; border-radius: 40px; white-space: nowrap; }
+        .question-section { background: rgba(255,255,255,0.15); border-radius: 24px; padding: 16px 18px; backdrop-filter: blur(8px); border: 0.5px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .question-number { font-size: 0.75rem; font-weight: 500; color: rgba(90,61,43,0.5); letter-spacing: 0.5px; }
+        .question-score { font-size: 0.75rem; font-weight: 500; color: rgba(90,61,43,0.5); }
+        .question-score span { color: #a67b5e; font-weight: 700; }
+        .question-wrapper { display: flex; align-items: flex-start; gap: 10px; }
+        .question-icon-svg { width: 40px; height: 40px; flex-shrink: 0; margin-top: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }
+        .question-icon-svg svg { width: 100%; height: 100%; }
+        .question-text { font-size: 1.2rem; font-weight: 600; color: #1a1a1a; line-height: 1.4; flex: 1; letter-spacing: -0.2px; }
+        .question-decor { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+        .question-decor .decor-svg { width: 28px; height: 28px; opacity: 0.4; }
+        .question-decor .decor-svg svg { width: 100%; height: 100%; }
+        .options-grid { display: flex; flex-direction: column; gap: 10px; flex: 1; justify-content: center; min-height: 0; padding: 4px 0; }
+        .option { background: rgba(255,248,240,0.5); backdrop-filter: blur(4px); padding: 14px 18px; border-radius: 60px; border: 1.5px solid rgba(139,107,80,0.08); font-weight: 500; color: #1a1a1a; transition: all 0.2s cubic-bezier(0.25,0.46,0.45,0.94); cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.03); font-size: 0.95rem; letter-spacing: 0.2px; text-align: left; position: relative; display: flex; align-items: center; gap: 12px; }
+        .option:active { transform: scale(0.97); }
+        .option .option-letter { font-weight: 700; color: #a67b5e; min-width: 24px; font-size: 0.85rem; }
+        .option .option-text { flex: 1; }
+        .option.selected { background: rgba(139,107,80,0.12); border-color: #a67b5e; box-shadow: 0 0 0 2px rgba(139,107,80,0.08); }
+        .option.correct { background: rgba(40,180,100,0.15) !important; border-color: #2a9d5a !important; color: #1a5a3a; box-shadow: 0 0 0 2px rgba(40,180,100,0.12); }
+        .option.wrong { background: rgba(200,60,60,0.15) !important; border-color: #cc4444 !important; color: #7a2a2a; box-shadow: 0 0 0 2px rgba(200,60,60,0.12); }
+        .option.disabled { pointer-events: none; opacity: 0.6; }
+        .quiz-nav { display: flex; gap: 10px; flex-shrink: 0; }
+        .quiz-nav .btn { flex: 1; padding: 13px 10px; font-size: 0.95rem; min-height: 46px; }
+        .btn-prev { background: rgba(90,61,43,0.06); color: #6b4d38; box-shadow: none; border: 1px solid rgba(90,61,43,0.06); }
+        .btn-prev:active { background: rgba(90,61,43,0.12); }
+        .btn-prev:disabled { opacity: 0.3; cursor: not-allowed; }
+        .auto-timer { font-size: 0.7rem; color: rgba(90,61,43,0.35); text-align: center; margin-top: -2px; flex-shrink: 0; letter-spacing: 0.3px; }
+        .auto-timer .countdown { font-weight: 600; color: #a67b5e; }
+        .result-icon { font-size: 3rem; text-align: center; margin: 0 0 2px; line-height: 1; color: #c8956e; }
+        .result-score { font-size: 3rem; font-weight: 700; color: #1a1a1a; text-align: center; letter-spacing: -1px; }
+        .result-details { background: rgba(255,255,255,0.3); border-radius: 32px; padding: 14px 16px; display: flex; justify-content: space-around; backdrop-filter: blur(4px); border: 0.5px solid rgba(139,107,80,0.06); flex-shrink: 0; }
+        .stat-number { font-weight: 700; font-size: 1.5rem; color: #1a1a1a; }
+        .stat-label { font-size: 0.7rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.8px; color: #6b4d38; font-weight: 400; }
+        .message-box { background: rgba(139,107,80,0.06); border-radius: 60px; padding: 14px 18px; text-align: center; font-weight: 500; font-size: 1.1rem; border: 0.5px solid rgba(139,107,80,0.06); color: #1a1a1a; flex-shrink: 0; letter-spacing: 0.2px; }
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+        .btn-group .btn { flex: 1; min-width: 90px; }
+        .bottom-nav { display: none; justify-content: space-around; align-items: center; background: rgba(255,255,255,0.25); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 40px; padding: 4px 8px; margin-top: 8px; border: 0.5px solid rgba(139,107,80,0.06); flex-shrink: 0; min-height: 56px; }
+        .bottom-nav.show { display: flex; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 30px; min-width: 56px; color: rgba(90,61,43,0.3); font-size: 0.5rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s cubic-bezier(0.25,0.46,0.45,0.94); cursor: pointer; touch-action: manipulation; border: none; background: transparent; gap: 2px; flex: 1; }
+        .nav-item.active { color: #6b4d38; background: rgba(255,255,255,0.15); }
+        .nav-item:active { transform: scale(0.92); }
+        .nav-icon { font-size: 1.3rem; line-height: 1.2; opacity: 0.7; }
+        .nav-item.active .nav-icon { opacity: 1; }
+        .nav-label { font-size: 0.5rem; opacity: 0.5; letter-spacing: 0.8px; font-weight: 400; }
+        .nav-item.active .nav-label { opacity: 0.8; }
+        .flex-1 { flex: 1; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .mt-1 { margin-top: 4px; }
+        .mb-1 { margin-bottom: 4px; }
+        .text-center { text-align: center; }
+        .option, .btn { min-height: 46px; display: flex; align-items: center; justify-content: center; }
+        button, .option { touch-action: manipulation; }
+        .app-card, .screen, .options-grid { overflow: hidden; }
+        .category-grid, .account-section, .settings-section, .profile-form-box, .evaluation-section { scrollbar-width: thin; scrollbar-color: rgba(139,107,80,0.15) transparent; }
+        .category-grid::-webkit-scrollbar, .account-section::-webkit-scrollbar, .settings-section::-webkit-scrollbar, .profile-form-box::-webkit-scrollbar, .evaluation-section::-webkit-scrollbar { width: 4px; }
+        .category-grid::-webkit-scrollbar-thumb, .account-section::-webkit-scrollbar-thumb, .settings-section::-webkit-scrollbar-thumb, .profile-form-box::-webkit-scrollbar-thumb, .evaluation-section::-webkit-scrollbar-thumb { background: rgba(139,107,80,0.15); border-radius: 10px; }
+        @media (max-width: 400px) {
+            .app-card { padding: 10px 12px 8px; }
+            .question-text { font-size: 1.05rem; }
+            .title { font-size: 2.2rem; }
+            .splash-title { font-size: 2.8rem; }
+            .option { padding: 12px 14px; font-size: 0.85rem; }
+            .badge { font-size: 0.7rem; padding: 5px 14px; }
+            .exit-btn { width: 34px; height: 34px; font-size: 1rem; top: 10px; right: 12px; }
+            .category-card { padding: 18px 12px 14px; min-height: 80px; }
+            .category-icon-svg { width: 36px; height: 36px; }
+            .category-name { font-size: 0.85rem; }
+            .category-grid { gap: 12px; }
+            .menu-item { padding: 14px 16px; }
+            .account-avatar-wrapper { width: 60px; height: 60px; }
+            .account-name { font-size: 1.1rem; }
+            .form-row { grid-template-columns: 1fr; }
+            .profile-form-box { padding: 16px 14px 14px; }
+            .photo-preview { width: 80px; height: 80px; }
+            .greeting-message { font-size: 0.95rem; padding: 10px 14px; }
+            .avatar-3d { width: 120px; height: 120px; }
+            .avatar-3d .face { font-size: 3.8rem; }
+            .speech-bubble { font-size: 0.85rem; padding: 8px 14px; max-width: 220px; }
+            .avatar-dots span { width: 6px; height: 6px; }
+            .avatar-dots span:nth-child(1) { transform: translate(-50%,-50%) rotate(0deg) translateX(70px); }
+            .avatar-dots span:nth-child(2) { transform: translate(-50%,-50%) rotate(60deg) translateX(70px); }
+            .avatar-dots span:nth-child(3) { transform: translate(-50%,-50%) rotate(120deg) translateX(70px); }
+            .avatar-dots span:nth-child(4) { transform: translate(-50%,-50%) rotate(180deg) translateX(70px); }
+            .avatar-dots span:nth-child(5) { transform: translate(-50%,-50%) rotate(240deg) translateX(70px); }
+            .avatar-dots span:nth-child(6) { transform: translate(-50%,-50%) rotate(300deg) translateX(70px); }
+            .quiz-nav .btn { padding: 11px 8px; font-size: 0.85rem; min-height: 40px; }
+            .question-icon-svg { width: 32px; height: 32px; }
+            .banner-icon-svg { width: 36px; height: 36px; }
+            .banner-title { font-size: 0.85rem; }
+            .question-section { padding: 12px 14px; }
+            .question-decor .decor-svg { width: 22px; height: 22px; }
+            .option .option-letter { min-width: 18px; font-size: 0.75rem; }
+            .toggle-container { padding: 14px 16px; }
+            .settings-group { padding: 12px 14px; }
+            .switch { width: 42px; height: 24px; }
+            .slider::before { height: 18px; width: 18px; left: 3px; bottom: 3px; }
+            .switch input:checked + .slider::before { transform: translateX(18px); }
+            .settings-header .shiny-prompt { font-size: 1.2rem; }
+            .settings-close { width: 30px; height: 30px; font-size: 1rem; }
+            .progress-stat-number { font-size: 1.4rem; }
+            .progress-ring { width: 60px; height: 60px; }
+            .progress-ring-text { font-size: 1rem; }
+            .progress-stats-grid { gap: 8px; }
+            .progress-stat-card { padding: 10px 8px; }
+        }
+        @media (min-height: 800px) {
+            .option { padding: 17px 22px; min-height: 54px; }
+            .question-text { font-size: 1.4rem; }
+            .btn { padding: 19px 12px; }
+            .category-card { padding: 28px 18px 24px; min-height: 120px; }
+            .category-icon-svg { width: 56px; height: 56px; }
+            .avatar-3d { width: 190px; height: 190px; }
+            .avatar-3d .face { font-size: 5.8rem; }
+            .question-icon-svg { width: 48px; height: 48px; }
+            .banner-icon-svg { width: 52px; height: 52px; }
+        }
+        /* Daily Tasks in Account section */
+        .daily-tasks-account { background: rgba(255,255,255,0.06); border-radius: 20px; padding: 14px 16px; border: 0.5px solid rgba(255,255,255,0.04); margin-top: 8px; }
+        .daily-tasks-account .title { font-size: 0.75rem; font-weight: 600; color: rgba(90,61,43,0.4); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+        .daily-task { background: rgba(255,255,255,0.06); border-radius: 16px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; border: 0.5px solid rgba(255,255,255,0.04); margin-bottom: 6px; }
+        .daily-task .task-icon { font-size: 1.4rem; }
+        .daily-task .task-info { flex: 1; }
+        .daily-task .task-name { font-weight: 500; color: #4a3222; font-size: 0.85rem; }
+        .daily-task .task-progress { font-size: 0.65rem; color: rgba(90,61,43,0.5); }
+        .daily-task .task-reward { font-size: 0.7rem; background: rgba(139,107,80,0.08); padding: 2px 10px; border-radius: 30px; color: #8b6b50; }
+        .daily-task .task-status { font-size: 0.8rem; }
+        .daily-task .claim-btn { background: linear-gradient(135deg, #f5c542, #e6b422); border: none; border-radius: 30px; padding: 4px 14px; font-size: 0.7rem; font-weight: 600; color: #2c1810; cursor: pointer; box-shadow: 0 2px 10px rgba(245,197,66,0.3); transition: all 0.2s ease; }
+        .daily-task .claim-btn:active { transform: scale(0.9); }
+        .daily-task .claim-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+        .daily-task.completed { opacity: 0.7; }
+        .daily-task.completed .task-status { color: #2a9d5a; }
+        .claim-btn.shine { animation: claimPulse 1s ease-in-out infinite; }
+        @keyframes claimPulse { 0%,100% { box-shadow: 0 0 10px rgba(245,197,66,0.3); } 50% { box-shadow: 0 0 30px rgba(245,197,66,0.7); } }
+        .achievement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+        .achievement-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 14px 10px; text-align: center; border: 1px solid rgba(255,255,255,0.04); transition: all 0.2s ease; cursor: pointer; }
+        .achievement-card.unlocked { background: rgba(255,215,0,0.12); border-color: #f5c542; }
+        .achievement-card .ach-icon { font-size: 2.2rem; }
+        .achievement-card .ach-name { font-weight: 600; color: #4a3222; font-size: 0.8rem; margin-top: 4px; }
+        .achievement-card .ach-desc { font-size: 0.6rem; color: rgba(90,61,43,0.5); margin-top: 2px; }
+        .achievement-card.locked .ach-icon { opacity: 0.3; filter: grayscale(1); }
+        .vip-shine { animation: vipGlow 2s ease-in-out infinite; }
+        @keyframes vipGlow { 0%,100% { box-shadow: 0 0 20px rgba(255,215,0,0.2); } 50% { box-shadow: 0 0 40px rgba(255,215,0,0.5); } }
+        #achievementDetailPopup {
+            position: absolute;
+            inset: 0;
+            background: rgba(44,24,16,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 250;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            border-radius: 0;
+            animation: fadeSlide 0.3s ease;
+        }
+        #achievementDetailPopup.active { display: flex; }
+        .achievement-detail-box {
+            background: #f5ebe0;
+            border-radius: 32px;
+            padding: 32px 28px 28px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(44,24,16,0.4);
+            border: 1px solid rgba(139,107,80,0.1);
+        }
+        .achievement-detail-box .ach-big-icon { font-size: 4rem; }
+        .achievement-detail-box .ach-big-name { font-size: 1.4rem; font-weight: 700; color: #5a3d2b; margin-top: 4px; }
+        .achievement-detail-box .ach-big-desc { font-size: 0.95rem; color: rgba(90,61,43,0.6); margin: 6px 0 16px; }
+        .achievement-detail-box .ach-big-status { font-size: 0.85rem; font-weight: 600; padding: 6px 16px; border-radius: 40px; display: inline-block; }
+        .achievement-detail-box .ach-big-status.unlocked { background: rgba(40,180,100,0.15); color: #2a7a3a; }
+        .achievement-detail-box .ach-big-status.locked { background: rgba(200,60,60,0.1); color: #a05555; }
+        /* remove music control */
+        .music-control { display: none !important; }
+        /* Crop Modal */
+        #cropModal {
+            position: absolute;
+            inset: 0;
+            background: rgba(44,24,16,0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 0;
+            animation: fadeSlide 0.3s ease;
+        }
+        #cropModal.active { display: flex; }
+        .crop-container {
+            background: #f5ebe0;
+            border-radius: 32px;
+            padding: 20px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 24px 80px rgba(44,24,16,0.6);
+            border: 1px solid rgba(139,107,80,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .crop-container .crop-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #5a3d2b;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .crop-container .img-container {
+            width: 100%;
+            max-height: 320px;
+            overflow: hidden;
+            border-radius: 16px;
+            background: rgba(0,0,0,0.05);
+        }
+        .crop-container .img-container img {
+            max-width: 100%;
+            display: block;
+        }
+        .crop-container .crop-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .crop-container .crop-actions .btn { flex: 1; padding: 14px 10px; font-size: 1rem; }
+        /* Result Summary Popup */
+        .result-summary-box {
+            background: #f5ebe0;
+            border-radius: 32px;
+            padding: 28px 24px 24px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 24px 80px rgba(44,24,16,0.6);
+            border: 1px solid rgba(139,107,80,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .result-summary-box .summary-icon { font-size: 3.5rem; }
+        .result-summary-box .summary-title { font-size: 1.4rem; font-weight: 700; color: #5a3d2b; margin-top: 4px; }
+        .result-summary-box .summary-sub { font-size: 0.95rem; color: rgba(90,61,43,0.6); margin-top: 2px; }
+        .result-summary-box .summary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 14px 0;
+        }
+        .result-summary-box .summary-stat {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 10px 6px;
+        }
+        .result-summary-box .summary-stat .num { font-size: 1.6rem; font-weight: 700; color: #4a3222; }
+        .result-summary-box .summary-stat .lbl { font-size: 0.6rem; color: rgba(90,61,43,0.5); text-transform: uppercase; letter-spacing: 0.5px; }
+        .result-summary-box .summary-chart {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 10px 0 14px;
+        }
+        .result-summary-box .summary-chart .mini-ring {
+            width: 70px;
+            height: 70px;
+            position: relative;
+        }
+        .result-summary-box .summary-chart .mini-ring svg { transform: rotate(-90deg); }
+        .result-summary-box .summary-chart .mini-ring .bg { fill: none; stroke: rgba(139,107,80,0.1); stroke-width: 6; }
+        .result-summary-box .summary-chart .mini-ring .prog { fill: none; stroke: #a67b5e; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+        .result-summary-box .summary-chart .mini-ring .center-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #4a3222;
+        }
+        .result-summary-box .summary-chart .mini-legend { text-align: left; font-size: 0.8rem; color: rgba(90,61,43,0.6); }
+        .result-summary-box .summary-chart .mini-legend span { display: block; margin: 2px 0; }
+        .result-summary-box .summary-chart .mini-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .result-summary-box .summary-msg {
+            background: rgba(139,107,80,0.06);
+            border-radius: 20px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            color: #4a3222;
+            margin: 8px 0 14px;
+            line-height: 1.5;
+            border: 0.5px solid rgba(139,107,80,0.06);
+        }
+        .result-summary-box .summary-msg .highlight { font-weight: 700; color: #8b6b50; }
+        .result-summary-box .summary-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-summary-box .summary-buttons .btn { flex: 1; padding: 14px 10px; font-size: 0.95rem; min-width: 80px; }
+        /* Birthday Popup */
+        .birthday-box {
+            background: linear-gradient(135deg, #fff5e6, #ffd700);
+            border-radius: 32px;
+            padding: 32px 28px 28px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 24px 80px rgba(255,215,0,0.5);
+            border: 2px solid #ffd700;
+            animation: birthdayBoxPulse 2s ease-in-out infinite;
+        }
+        @keyframes birthdayBoxPulse { 0%,100% { box-shadow: 0 24px 80px rgba(255,215,0,0.3); } 50% { box-shadow: 0 24px 80px rgba(255,215,0,0.7); } }
+        .birthday-box .birthday-icon { font-size: 4rem; animation: wiggle 1s ease-in-out infinite; }
+        @keyframes wiggle { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+        .birthday-box .birthday-title { font-size: 1.8rem; font-weight: 800; color: #b8860b; margin-top: 4px; }
+        .birthday-box .birthday-msg { font-size: 1rem; color: #5a3d2b; margin: 10px 0 16px; line-height: 1.6; }
+        .birthday-box .birthday-msg .highlight { font-weight: 700; color: #b8860b; }
+        .birthday-box .birthday-gift {
+            background: rgba(255,215,0,0.15);
+            border-radius: 20px;
+            padding: 12px 16px;
+            border: 1px dashed #ffd700;
+            margin-bottom: 16px;
+        }
+        .birthday-box .birthday-gift .gift-icon { font-size: 2rem; }
+        .birthday-box .birthday-gift .gift-text { font-size: 0.9rem; color: #5a3d2b; margin-top: 4px; }
+        .birthday-box .birthday-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+        .birthday-box .birthday-buttons .btn { flex: 1; padding: 14px 10px; font-size: 0.95rem; min-width: 80px; }
+
+        /* ============================================================
+           AVATAR GRID - DiceBear Style Selection
+           ============================================================ */
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 10px 0 14px;
+        }
+        .avatar-option {
+            aspect-ratio: 1;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+            position: relative;
+            padding: 6px;
+        }
+        .avatar-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+        .avatar-option.selected {
+            border-color: #a67b5e;
+            box-shadow: 0 0 0 3px rgba(139,107,80,0.2), 0 4px 16px rgba(139,107,80,0.2);
+            transform: scale(1.04);
+        }
+        .avatar-option:active { transform: scale(0.92); }
+        .avatar-option .check-mark {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #a67b5e;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.7rem;
+            box-shadow: 0 2px 8px rgba(139,107,80,0.3);
+        }
+        .avatar-option.selected .check-mark {
+            display: flex;
+        }
+        .avatar-option .style-name {
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.5rem;
+            color: rgba(90,61,43,0.4);
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(4px);
+            padding: 2px 0;
+            border-radius: 0 0 12px 12px;
+        }
+        .avatar-label { font-size: 0.7rem; color: rgba(90,61,43,0.4); text-align: center; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+<div class="app-card" id="app">
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- SPLASH OVERLAY -->
+    <div id="splashOverlay">
+        <div class="splash-title">Quizzy</div>
+        <div class="splash-sub">mobile · quiz</div>
+        <div class="splash-made"><span>made by Insha Mahfooz</span></div>
+    </div>
+
+    <!-- ONBOARDING OVERLAY -->
+    <div id="onboardingOverlay">
+        <div class="onboarding-box">
+            <div class="onboard-title">👋 Welcome to Quizzy!</div>
+            <div class="onboard-sub">Please fill in your details to get started</div>
+            <form id="onboardingForm" autocomplete="off">
+                <div class="photo-upload-wrapper">
+                    <div class="photo-preview" id="onboardPhotoPreview" onclick="document.getElementById('onboardPhotoInput').click()">
+                        <span class="placeholder" id="onboardPhotoPlaceholder">📷</span>
+                        <img id="onboardPhotoImage" style="display:none;" alt="Profile Photo" />
+                    </div>
+                    <button type="button" class="photo-upload-btn" onclick="document.getElementById('onboardPhotoInput').click()">Upload Photo</button>
+                    <input type="file" id="onboardPhotoInput" accept="image/*" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="onboardFullName" placeholder="Enter your full name" required />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-input" id="onboardDob" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Grade / Class</label>
+                        <input type="text" class="form-input" id="onboardGrade" placeholder="e.g., 5th Grade" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Favorite Subject</label>
+                    <select class="form-input" id="onboardFavSubject">
+                        <option value="">Select your favorite</option>
+                        <option value="mathematics">Mathematics</option>
+                        <option value="science">Science</option>
+                        <option value="art">Art</option>
+                        <option value="social_study">Social Study</option>
+                        <option value="history">History</option>
+                        <option value="geography">Geography</option>
+                        <option value="sports">Sports</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="technology">Technology</option>
+                        <option value="food">Food & Drink</option>
+                        <option value="business">Business</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fun Fact About You</label>
+                    <input type="text" class="form-input" id="onboardFunFact" placeholder="e.g., I love reading books!" />
+                </div>
+                <!-- DiceBear Avatar Selection -->
+                <div style="margin-top:6px;">
+                    <div class="avatar-label">🎨 Choose your avatar style</div>
+                    <div class="avatar-grid" id="onboardAvatarGrid"></div>
+                </div>
+                <button type="submit" class="btn" id="onboardSaveBtn" style="margin-top:4px;">🚀 Let's Go!</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EXIT POPUP -->
+    <div id="exitPopup">
+        <div class="popup-box">
+            <div class="popup-title">Exit Quiz?</div>
+            <div class="popup-sub">Your progress will be saved and results will be shown.</div>
+            <div class="popup-buttons">
+                <button class="btn btn-secondary" id="resumeBtn">Resume</button>
+                <button class="btn btn-danger" id="exitConfirmBtn">Exit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUBMIT POPUP -->
+    <div id="submitPopup">
+        <div class="popup-box">
+            <div class="popup-title">Submit Quiz?</div>
+            <div class="popup-sub">You have answered all questions. Are you sure you want to submit?</div>
+            <div class="popup-buttons">
+                <button class="btn btn-secondary" id="submitNoBtn">No, Go Back</button>
+                <button class="btn btn-danger" id="submitYesBtn">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLAIM POPUP -->
+    <div id="claimPopup">
+        <div class="popup-box">
+            <div class="popup-title">⭐ Claim Reward?</div>
+            <div class="popup-sub" id="claimPopupMsg">You earned <strong>+15</strong> star points!</div>
+            <div class="popup-buttons">
+                <button class="btn btn-secondary" id="claimNoBtn">No, Later</button>
+                <button class="btn btn-success" id="claimYesBtn">Yes, Claim Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST POPUP -->
+    <div id="toastPopup">
+        <div class="toast-box">
+            <div class="toast-icon" id="toastIcon">🎉</div>
+            <div class="toast-title" id="toastTitle">Awesome!</div>
+            <div class="toast-msg" id="toastMsg">You claimed 15 star points!</div>
+        </div>
+    </div>
+
+    <!-- RESULT SUMMARY POPUP -->
+    <div id="resultSummaryPopup">
+        <div class="result-summary-box" id="resultSummaryContent">
+            <!-- Dynamically filled -->
+        </div>
+    </div>
+
+    <!-- BIRTHDAY POPUP -->
+    <div id="birthdayPopup">
+        <div class="birthday-box">
+            <div class="birthday-icon">🎂</div>
+            <div class="birthday-title">🎉 Happy Birthday! 🎉</div>
+            <div class="birthday-msg" id="birthdayMsg">
+                Dear <span class="highlight" id="birthdayName">Learner</span>,<br>
+                Wishing you a day filled with joy, laughter, and endless knowledge! 🌟<br>
+                You're a star and today is YOUR day! ✨
+            </div>
+            <div class="birthday-gift">
+                <div class="gift-icon">🎁</div>
+                <div class="gift-text"><strong>🎊 Special Birthday Gift!</strong><br>You've received <strong>+50 ⭐ bonus points</strong> and a <strong>👑 Birthday VIP</strong> badge for today!</div>
+            </div>
+            <div class="birthday-buttons">
+                <button class="btn btn-secondary" id="birthdayLaterBtn">Later</button>
+                <button class="btn btn-gold" id="birthdayClaimBtn">🎁 Claim Gift</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACHIEVEMENT DETAIL POPUP -->
+    <div id="achievementDetailPopup">
+        <div class="achievement-detail-box">
+            <div class="ach-big-icon" id="achDetailIcon">🏆</div>
+            <div class="ach-big-name" id="achDetailName">Achievement</div>
+            <div class="ach-big-desc" id="achDetailDesc">Description</div>
+            <div class="ach-big-status" id="achDetailStatus">🔒 Locked</div>
+            <div style="margin-top:16px;">
+                <button class="btn btn-secondary" id="achDetailCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CROP MODAL -->
+    <div id="cropModal">
+        <div class="crop-container">
+            <div class="crop-title">✂️ Crop & Adjust</div>
+            <div class="img-container">
+                <img id="cropImage" src="" alt="Crop" />
+            </div>
+            <div class="crop-actions">
+                <button class="btn btn-secondary" id="cropCancelBtn">Cancel</button>
+                <button class="btn btn-success" id="cropConfirmBtn">✓ Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE FORM OVERLAY -->
+    <div id="profileFormOverlay">
+        <div class="profile-form-box">
+            <div class="form-title">My Profile</div>
+            <div class="form-sub">Edit your profile details</div>
+            <form id="profileForm" autocomplete="off">
+                <div class="photo-upload-wrapper">
+                    <div class="photo-preview" id="photoPreview" onclick="document.getElementById('photoInput').click()">
+                        <span class="placeholder" id="photoPlaceholder">📷</span>
+                        <img id="photoImage" style="display:none;" alt="Profile Photo" />
+                    </div>
+                    <button type="button" class="photo-upload-btn" onclick="document.getElementById('photoInput').click()">Upload Photo</button>
+                    <input type="file" id="photoInput" accept="image/*" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="fullName" placeholder="Enter your full name" required />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-input" id="userDob" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Grade / Class</label>
+                        <input type="text" class="form-input" id="userGrade" placeholder="e.g., 5th Grade" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Favorite Subject</label>
+                    <select class="form-input" id="favSubject">
+                        <option value="">Select your favorite</option>
+                        <option value="mathematics">Mathematics</option>
+                        <option value="science">Science</option>
+                        <option value="art">Art</option>
+                        <option value="social_study">Social Study</option>
+                        <option value="history">History</option>
+                        <option value="geography">Geography</option>
+                        <option value="sports">Sports</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="technology">Technology</option>
+                        <option value="food">Food & Drink</option>
+                        <option value="business">Business</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fun Fact About You</label>
+                    <input type="text" class="form-input" id="userFunFact" placeholder="e.g., I love reading books!" />
+                </div>
+                <!-- DiceBear Avatar Selection -->
+                <div style="margin-top:6px;">
+                    <div class="avatar-label">🎨 Choose your avatar style</div>
+                    <div class="avatar-grid" id="editAvatarGrid"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" id="formCancelBtn">Cancel</button>
+                    <button type="submit" class="btn" id="formSaveBtn">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- WELCOME SCREEN -->
+    <div id="welcomeScreen" class="screen active">
+        <div style="flex-shrink:0;">
+            <div class="title shiny-text">Quizzy</div>
+            <div class="subtitle" style="margin-top: 4px;" id="welcomeMessage">Test your knowledge </div>
+        </div>
+        <div class="avatar-container">
+            <div class="avatar-3d" id="avatar3d">
+                <div class="avatar-ring"></div>
+                <div class="avatar-ring"></div>
+                <div class="avatar-dots"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="face" id="avatarFace">🧑‍🎓</div>
+            </div>
+            <div class="speech-bubble" id="speechBubble">
+                <span class="highlight" id="bubbleName">Learner</span>, 
+                <span id="bubbleAction">tap Start Quiz to begin!</span>
+            </div>
+        </div>
+        <div class="badge-row">
+            <span class="badge">    </span>
+           
+        </div>
+        <button class="btn" id="startQuizBtn" style="margin-top: 4px;">Start Quiz</button>
+        <div style="flex:0.15;"></div>
+    </div>
+
+    <!-- EXPLORE / CATEGORY SCREEN -->
+    <div id="exploreScreen" class="screen">
+        <div style="flex-shrink:0;">
+            <div style="font-size:1.6rem; font-weight:700; color:#5a3d2b; line-height:1.2;" class="shiny-prompt">Subjects</div>
+            <div class="greeting-message" id="greetingMessage">
+                <span class="greeting-icon" id="greetingIcon">🌅</span>
+                Good <span id="greetingTime">Morning</span>, 
+                <span class="highlight-name" id="greetingName">Learner</span>! 
+                <span id="greetingAction">Ready to explore?</span>
+            </div>
+        </div>
+        <div class="category-grid" id="categoryGrid"></div>
+    </div>
+
+    <!-- ACCOUNT SCREEN -->
+    <div id="accountScreen" class="screen">
+        <div style="flex-shrink:0;">
+            <div style="font-size:1.6rem; font-weight:700; color:#5a3d2b; line-height:1.2;" class="shiny-prompt">My Account</div>
+            <div style="font-size:0.9rem; color:rgba(90,61,43,0.5); margin-top:4px; font-weight:400; letter-spacing:0.5px;">Settings & achievements</div>
+        </div>
+        <div class="account-section">
+            <div class="account-header" id="accountHeader">
+                <div class="birthday-badge" id="birthdayBadge" style="display:none;">🎂 Birthday</div>
+                <div class="vip-badge" id="vipBadge" style="display:none;">👑 VIP</div>
+                <div class="account-avatar-wrapper" id="avatarWrapper">
+                    <span class="avatar-placeholder" id="avatarPlaceholder"></span>
+                    <img id="avatarImage" style="display:none;" alt="Profile Photo" />
+                </div>
+                <div class="account-name" id="accountDisplayName">Little Learner</div>
+                <div class="account-email" id="accountStats">⭐ 0 points · 0 quizzes</div>
+                <div class="account-email" id="accountDob" style="font-size:0.75rem; opacity:0.5;"></div>
+            </div>
+
+            <div class="account-menu">
+                <div class="menu-item" id="profileBtn">
+                    <span class="menu-icon">👤</span>
+                    <div class="menu-text"><div class="menu-title">My Profile</div><div class="menu-desc">View and edit your profile details</div></div>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" id="statsBtn">
+                    <span class="menu-icon">📊</span>
+                    <div class="menu-text"><div class="menu-title">My Statistics</div><div class="menu-desc">View your progress and performance</div></div>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" id="settingsMenuBtn">
+                    <span class="menu-icon">⚙️</span>
+                    <div class="menu-text"><div class="menu-title">Settings</div><div class="menu-desc">Notifications · Kid Mode</div></div>
+                    <span class="menu-arrow">›</span>
+                </div>
+            </div>
+
+            <!-- Achievements Grid -->
+            <div style="margin-top:8px;">
+                <div style="font-size:0.75rem; font-weight:600; color:rgba(90,61,43,0.4); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">🏆 Achievements</div>
+                <div class="achievement-grid" id="achievementGrid"></div>
+            </div>
+
+            <!-- Daily Tasks -->
+            <div class="daily-tasks-account" id="dailyTasksAccount">
+                <div class="title">⭐ Daily Tasks</div>
+                <div id="dailyTasksContainerAccount"></div>
+            </div>
+
+            <div style="flex:0.2;"></div>
+        </div>
+    </div>
+
+    <!-- SETTINGS SCREEN -->
+    <div id="settingsScreen" class="screen">
+        <div style="flex-shrink:0;">
+            <div class="settings-header">
+                <div style="font-size:1.4rem; font-weight:700; color:#5a3d2b; line-height:1.2;" class="shiny-prompt">Settings</div>
+                <button class="settings-close" id="settingsCloseBtn" title="Close Settings">✕</button>
+            </div>
+            <div style="font-size:0.9rem; color:rgba(90,61,43,0.5); margin-top:2px; font-weight:400; letter-spacing:0.5px; padding-left:4px;">Customize your app experience</div>
+        </div>
+        <div class="settings-section">
+            <div class="settings-group">
+                <div class="settings-group-title">Preferences</div>
+                <div class="toggle-container"><div class="toggle-info"><div class="toggle-label"><span class="toggle-title">Notifications</span><span class="toggle-desc">Get daily quiz reminders</span></div></div><label class="switch"><input type="checkbox" id="notificationToggle" checked /><span class="slider"></span></label></div>
+            </div>
+            <div class="settings-group">
+                <div class="settings-group-title">Experience</div>
+                <div class="toggle-container" style="border-bottom: none; padding-bottom: 0; margin-bottom: 0;"><div class="toggle-info"><div class="toggle-label"><span class="toggle-title">Kid-Friendly Mode</span><span class="toggle-desc">Simple and safe for children</span></div></div><label class="switch"><input type="checkbox" id="kidModeToggle" checked /><span class="slider"></span></label></div>
+            </div>
+        </div>
+        <div style="flex:0.1;"></div>
+    </div>
+
+    <!-- EVALUATION SCREEN -->
+    <div id="evaluationScreen" class="screen">
+        <div style="flex-shrink:0;">
+            <div style="font-size:1.4rem; font-weight:700; color:#5a3d2b; line-height:1.2;" class="shiny-prompt">Your Progress</div>
+            <div style="font-size:0.85rem; color:rgba(90,61,43,0.5); margin-top:2px; font-weight:400; letter-spacing:0.5px;">Track your learning journey</div>
+        </div>
+        <div class="evaluation-section" style="flex:1; overflow-y:auto; padding:4px 0; display:flex; flex-direction:column; gap:10px;">
+            <div class="progress-stats-grid">
+                <div class="progress-stat-card"><div class="progress-stat-number" id="evalQuizzes">0</div><div class="progress-stat-label">Quizzes</div></div>
+                <div class="progress-stat-card"><div class="progress-stat-number" id="evalCorrect">0</div><div class="progress-stat-label">Correct</div></div>
+                <div class="progress-stat-card"><div class="progress-stat-number" id="evalWrong">0</div><div class="progress-stat-label">Wrong</div></div>
+                <div class="progress-stat-card"><div class="progress-stat-number" id="evalAccuracy">0%</div><div class="progress-stat-label">Accuracy</div></div>
+            </div>
+            <div class="progress-chart-container" style="flex:1; min-height:0;">
+                <div class="progress-chart-title">Performance Overview</div>
+                <div style="display:flex; flex-direction:column; flex:1; min-height:0;">
+                    <div class="progress-ring-container" style="flex-shrink:0;">
+                        <div><div class="progress-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="32" /><circle class="progress" id="evalProgressRing" cx="40" cy="40" r="32" stroke-dasharray="201" stroke-dashoffset="201" /></svg><div class="progress-ring-text" id="evalRingPercent">0%</div></div><div class="progress-ring-label">Overall Score</div></div>
+                        <div style="flex:1; min-width:0;"><div style="font-size:0.75rem; color:rgba(90,61,43,0.5); font-weight:500; margin-bottom:4px;">Knowledge Growth</div><div id="evalGrowthMessage" style="font-size:0.85rem; color:#4a3222; font-weight:500; line-height:1.4;">Start your first quiz to see progress!</div><div style="font-size:0.7rem; color:rgba(90,61,43,0.35); margin-top:4px;" id="evalLevel">Level: Beginner</div></div>
+                    </div>
+                    <div style="flex:1; min-height:0; padding-top:4px;"><div style="font-size:0.65rem; font-weight:500; color:rgba(90,61,43,0.3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Category Performance</div><div class="chart-bars" id="evalChartBars"></div></div>
+                </div>
+            </div>
+        </div>
+        <div style="flex:0.1;"></div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quizScreen" class="screen">
+        <button class="exit-btn" id="exitBtn">✕</button>
+        <div class="quiz-banner" id="quizBanner">
+            <div class="banner-icon-svg" id="bannerIconSvg"></div>
+            <div class="banner-info"><div class="banner-title" id="bannerTitle">Mathematics</div><div class="banner-sub" id="bannerSub">Category</div></div>
+            <div class="banner-progress" id="bannerProgress">1 / 15</div>
+        </div>
+        <div class="question-section">
+            <div class="question-header"><span class="question-number" id="questionCounter">Question 1 of 15</span><span class="question-score">⭐ <span id="liveScore">0</span></span></div>
+            <div class="question-wrapper"><div class="question-icon-svg" id="questionIconSvg"></div><div class="question-text" id="questionText">Loading question…</div></div>
+            <div class="question-decor" id="questionDecor"></div>
+        </div>
+        <div class="options-grid" id="optionsContainer"></div>
+        <div class="quiz-nav"><button class="btn btn-prev btn-nav" id="prevBtn" disabled>← Prev</button><button class="btn btn-nav" id="nextBtn" disabled style="opacity:0.4;">Next →</button></div>
+        <div class="auto-timer" id="autoTimer">Auto-advance in <span class="countdown" id="countdownDisplay">3</span>s</div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="resultScreen" class="screen">
+        <div class="result-icon">★</div>
+        <div class="result-score" id="finalScoreText">0%</div>
+        <div class="result-details"><div class="stat-item"><div class="stat-number" id="correctCount">0</div><div class="stat-label">Correct</div></div><div class="stat-item"><div class="stat-number" id="wrongCount">0</div><div class="stat-label">Wrong</div></div><div class="stat-item"><div class="stat-number" id="totalCount">0</div><div class="stat-label">Total</div></div></div>
+        <div class="message-box" id="performanceMessage">Excellent</div>
+        <div class="btn-group"><button class="btn btn-secondary" id="homeBtn">Home</button><button class="btn" id="restartBtn">Restart</button></div>
+        <div style="flex:0.2;"></div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-tab="explore"><span class="nav-icon">⊞</span><span class="nav-label">Explore</span></button>
+        <button class="nav-item" data-tab="evaluation"><span class="nav-icon">▦</span><span class="nav-label">Evaluation</span></button>
+        <button class="nav-item" data-tab="account"><span class="nav-icon">👤</span><span class="nav-label">Account</span></button>
+    </div>
+</div>
+
+<!-- Cropper.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<script>
+(function() {
+    "use strict";
+
+    const $ = id => document.getElementById(id);
+    const $$ = sel => document.querySelectorAll(sel);
+
+    // ============================================================
+    // 🎨 DICEBEAR AVATAR STYLES
+    // ============================================================
+    const AVATAR_STYLES = [
+        { id: 'lorelei', name: 'Cartoon', previewSeed: 'preview' },
+        { id: 'pixel-art', name: 'Pixel', previewSeed: 'preview' },
+        { id: 'bottts', name: 'Robot', previewSeed: 'preview' },
+        { id: 'avataaars', name: 'Avatar', previewSeed: 'preview' },
+        { id: 'adventurer', name: 'Adventure', previewSeed: 'preview' },
+        { id: 'open-peeps', name: 'People', previewSeed: 'preview' },
+        { id: 'fun-emoji', name: 'Emoji', previewSeed: 'preview' },
+        { id: 'thumbs', name: 'Simple', previewSeed: 'preview' }
+    ];
+
+    // ============================================================
+    // CORE STATE
+    // ============================================================
+    let currentCategory = null;
+    let questions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let isAnswered = false;
+    let quizActive = false;
+    let totalQuestions = 15;
+    let isTransitioning = false;
+    let totalQuizzesPlayed = 0;
+    let totalCorrectAnswers = 0;
+    let profilePhotoData = null;
+    let autoAdvanceTimer = null;
+    let countdownValue = 3;
+    let isAutoAdvancing = false;
+    let userAnswers = [];
+    let starPoints = 0;
+    let pendingClaimTaskId = null;
+    let cropper = null;
+    let tempImageFile = null;
+    let isOnboardingComplete = false;
+    let lastQuizResult = null;
+    let birthdayClaimed = false;
+    let selectedAvatarStyleId = 'lorelei';
+
+    // DOM refs
+    const loadingOverlay = $('loadingOverlay');
+    const splashOverlay = $('splashOverlay');
+    const onboardingOverlay = $('onboardingOverlay');
+    const welcomeScreen = $('welcomeScreen');
+    const exploreScreen = $('exploreScreen');
+    const accountScreen = $('accountScreen');
+    const settingsScreen = $('settingsScreen');
+    const evaluationScreen = $('evaluationScreen');
+    const quizScreen = $('quizScreen');
+    const resultScreen = $('resultScreen');
+    const resultSummaryPopup = $('resultSummaryPopup');
+    const resultSummaryContent = $('resultSummaryContent');
+    const birthdayPopup = $('birthdayPopup');
+    const birthdayName = $('birthdayName');
+    const birthdayMsg = $('birthdayMsg');
+    const birthdayLaterBtn = $('birthdayLaterBtn');
+    const birthdayClaimBtn = $('birthdayClaimBtn');
+    const categoryGrid = $('categoryGrid');
+    const startBtn = $('startQuizBtn');
+    const nextBtn = $('nextBtn');
+    const prevBtn = $('prevBtn');
+    const homeBtn = $('homeBtn');
+    const restartBtn = $('restartBtn');
+    const exitBtn = $('exitBtn');
+    const exitPopup = $('exitPopup');
+    const resumeBtn = $('resumeBtn');
+    const exitConfirmBtn = $('exitConfirmBtn');
+    const submitPopup = $('submitPopup');
+    const submitYesBtn = $('submitYesBtn');
+    const submitNoBtn = $('submitNoBtn');
+    const claimPopup = $('claimPopup');
+    const claimYesBtn = $('claimYesBtn');
+    const claimNoBtn = $('claimNoBtn');
+    const claimPopupMsg = $('claimPopupMsg');
+    const toastPopup = $('toastPopup');
+    const toastIcon = $('toastIcon');
+    const toastTitle = $('toastTitle');
+    const toastMsg = $('toastMsg');
+    const achievementDetailPopup = $('achievementDetailPopup');
+    const achDetailIcon = $('achDetailIcon');
+    const achDetailName = $('achDetailName');
+    const achDetailDesc = $('achDetailDesc');
+    const achDetailStatus = $('achDetailStatus');
+    const achDetailCloseBtn = $('achDetailCloseBtn');
+    const cropModal = $('cropModal');
+    const cropImage = $('cropImage');
+    const cropCancelBtn = $('cropCancelBtn');
+    const cropConfirmBtn = $('cropConfirmBtn');
+    // Onboarding form
+    const onboardForm = $('onboardingForm');
+    const onboardFullName = $('onboardFullName');
+    const onboardDob = $('onboardDob');
+    const onboardGrade = $('onboardGrade');
+    const onboardFavSubject = $('onboardFavSubject');
+    const onboardFunFact = $('onboardFunFact');
+    const onboardPhotoPreview = $('onboardPhotoPreview');
+    const onboardPhotoPlaceholder = $('onboardPhotoPlaceholder');
+    const onboardPhotoImage = $('onboardPhotoImage');
+    const onboardPhotoInput = $('onboardPhotoInput');
+    const onboardAvatarGrid = $('onboardAvatarGrid');
+    let onboardPhotoData = null;
+    // Profile form
+    const profileForm = $('profileForm');
+    const fullName = $('fullName');
+    const userDob = $('userDob');
+    const userGrade = $('userGrade');
+    const favSubject = $('favSubject');
+    const userFunFact = $('userFunFact');
+    const formCancelBtn = $('formCancelBtn');
+    const formSaveBtn = $('formSaveBtn');
+    const photoPreview = $('photoPreview');
+    const photoPlaceholder = $('photoPlaceholder');
+    const photoImage = $('photoImage');
+    const photoInput = $('photoInput');
+    const editAvatarGrid = $('editAvatarGrid');
+
+    const questionCounter = $('questionCounter');
+    const liveScore = $('liveScore');
+    const questionText = $('questionText');
+    const questionIconSvg = $('questionIconSvg');
+    const optionsContainer = $('optionsContainer');
+    const finalScoreText = $('finalScoreText');
+    const correctCount = $('correctCount');
+    const wrongCount = $('wrongCount');
+    const totalCount = $('totalCount');
+    const performanceMessage = $('performanceMessage');
+    const navItems = $$('.nav-item');
+    const bottomNav = $('bottomNav');
+    const autoTimer = $('autoTimer');
+    const countdownDisplay = $('countdownDisplay');
+    const bannerIconSvg = $('bannerIconSvg');
+    const bannerTitle = $('bannerTitle');
+    const bannerSub = $('bannerSub');
+    const bannerProgress = $('bannerProgress');
+    const questionDecor = $('questionDecor');
+    const evalQuizzes = $('evalQuizzes');
+    const evalCorrect = $('evalCorrect');
+    const evalWrong = $('evalWrong');
+    const evalAccuracy = $('evalAccuracy');
+    const evalProgressRing = $('evalProgressRing');
+    const evalRingPercent = $('evalRingPercent');
+    const evalGrowthMessage = $('evalGrowthMessage');
+    const evalLevel = $('evalLevel');
+    const evalChartBars = $('evalChartBars');
+    const settingsMenuBtn = $('settingsMenuBtn');
+    const settingsCloseBtn = $('settingsCloseBtn');
+    const notificationToggle = $('notificationToggle');
+    const kidModeToggle = $('kidModeToggle');
+    const avatarFace = $('avatarFace');
+    const bubbleName = $('bubbleName');
+    const bubbleAction = $('bubbleAction');
+    const greetingName = $('greetingName');
+    const greetingTime = $('greetingTime');
+    const greetingIcon = $('greetingIcon');
+    const greetingAction = $('greetingAction');
+    const accountDisplayName = $('accountDisplayName');
+    const accountStats = $('accountStats');
+    const accountDob = $('accountDob');
+    const welcomeMessage = $('welcomeMessage');
+    const avatarPlaceholder = $('avatarPlaceholder');
+    const avatarImage = $('avatarImage');
+    const profileBtn = $('profileBtn');
+    const statsBtn = $('statsBtn');
+    const accountHeader = $('accountHeader');
+    const vipBadge = $('vipBadge');
+    const birthdayBadge = $('birthdayBadge');
+    const achievementGrid = $('achievementGrid');
+    const dailyTasksContainerAccount = $('dailyTasksContainerAccount');
+
+    // ============================================================
+    // DICEBEAR HELPER FUNCTIONS
+    // ============================================================
+    function getDiceBearUrl(styleId, seed) {
+        if (!seed) seed = 'default';
+        return `https://api.dicebear.com/10.x/${styleId}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
+    }
+
+    function getDiceBearImg(styleId, seed, className = '') {
+        const url = getDiceBearUrl(styleId, seed);
+        return `<img src="${url}" alt="Avatar" class="${className}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    }
+
+    // ============================================================
+    // AVATAR GRID RENDER (DiceBear)
+    // ============================================================
+    function renderAvatarGrid(container, selectedStyleId) {
+        container.innerHTML = '';
+        AVATAR_STYLES.forEach((style) => {
+            const div = document.createElement('div');
+            div.className = 'avatar-option' + (style.id === selectedStyleId ? ' selected' : '');
+            const previewUrl = getDiceBearUrl(style.id, 'preview');
+            div.innerHTML = `
+                <img src="${previewUrl}" alt="${style.name}" loading="lazy" />
+                <div class="check-mark">✓</div>
+                <div class="style-name">${style.name}</div>
+            `;
+            div.dataset.styleId = style.id;
+            div.addEventListener('click', function() {
+                container.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+                this.classList.add('selected');
+                if (container === onboardAvatarGrid) {
+                    selectedAvatarStyleId = this.dataset.styleId;
+                } else if (container === editAvatarGrid) {
+                    selectedAvatarStyleId = this.dataset.styleId;
+                }
+            }, { passive: true });
+            container.appendChild(div);
+        });
+    }
+
+    // ============================================================
+    // DISPLAY AVATAR IN ACCOUNT HEADER
+    // ============================================================
+    function displayAvatarInAccount(userData) {
+        const placeholder = avatarPlaceholder;
+        const img = avatarImage;
+        if (userData && userData.photo) {
+            // Show uploaded photo
+            img.src = userData.photo;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            placeholder.innerHTML = '';
+        } else if (userData && userData.avatarStyle) {
+            // Show DiceBear avatar
+            img.style.display = 'none';
+            placeholder.style.display = 'flex';
+            placeholder.style.alignItems = 'center';
+            placeholder.style.justifyContent = 'center';
+            placeholder.style.background = 'transparent';
+            placeholder.style.padding = '0';
+            const seed = userData.fullName || 'user';
+            const url = getDiceBearUrl(userData.avatarStyle, seed);
+            placeholder.innerHTML = `<img src="${url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+        } else {
+            // Default fallback
+            img.style.display = 'none';
+            placeholder.style.display = 'flex';
+            placeholder.style.alignItems = 'center';
+            placeholder.style.justifyContent = 'center';
+            placeholder.style.background = '#e8d5c4';
+            placeholder.style.padding = '0';
+            placeholder.innerHTML = '<span style="font-size:2.5rem;">🧒</span>';
+        }
+    }
+
+    // ============================================================
+    // ONBOARDING PHOTO UPLOAD WITH CROP
+    // ============================================================
+    onboardPhotoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                tempImageFile = dataUrl;
+                openCropModalForOnboarding(dataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+        this.value = '';
+    });
+
+    onboardPhotoPreview.addEventListener('click', function() {
+        onboardPhotoInput.click();
+    });
+
+    function openCropModalForOnboarding(imageSrc) {
+        cropImage.src = imageSrc;
+        cropModal.classList.add('active');
+        cropImage.onload = function() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 1,
+                viewMode: 1,
+                autoCropArea: 0.8,
+                movable: true,
+                zoomable: true,
+                rotatable: false,
+                scalable: false,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                dragMode: 'move'
+            });
+        };
+        if (cropImage.complete) { cropImage.onload(); }
+        cropConfirmBtn.onclick = function() {
+            if (!cropper) return;
+            const canvas = cropper.getCroppedCanvas({ width: 300, height: 300, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+            if (!canvas) { showToast('⚠️', 'Error', 'Could not crop image.'); return; }
+            const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            onboardPhotoImage.src = croppedDataUrl;
+            onboardPhotoImage.style.display = 'block';
+            onboardPhotoPlaceholder.style.display = 'none';
+            onboardPhotoData = croppedDataUrl;
+            closeCropModal();
+            showToast('✂️', 'Cropped!', 'Your photo has been cropped successfully.');
+        };
+    }
+
+    function closeCropModal() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        cropModal.classList.remove('active');
+        cropImage.src = '';
+        tempImageFile = null;
+        cropConfirmBtn.onclick = applyCrop;
+    }
+
+    function applyCrop() {
+        if (!cropper) return;
+        const canvas = cropper.getCroppedCanvas({ width: 300, height: 300, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+        if (!canvas) { showToast('⚠️', 'Error', 'Could not crop image.'); return; }
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        photoImage.src = croppedDataUrl;
+        photoImage.style.display = 'block';
+        photoPlaceholder.style.display = 'none';
+        profilePhotoData = croppedDataUrl;
+        closeCropModal();
+        showToast('✂️', 'Cropped!', 'Your photo has been cropped successfully.');
+    }
+
+    // ============================================================
+    // ONBOARDING FORM SUBMIT
+    // ============================================================
+    onboardForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = onboardFullName.value.trim();
+        if (!name) {
+            showToast('⚠️', 'Error', 'Please enter your name.');
+            return;
+        }
+        const userData = {
+            fullName: name,
+            dob: onboardDob.value || '',
+            grade: onboardGrade.value.trim() || 'Not specified',
+            favSubject: onboardFavSubject.value || '',
+            funFact: onboardFunFact.value.trim() || 'I love learning!',
+            photo: onboardPhotoData || null,
+            avatarStyle: selectedAvatarStyleId
+        };
+        saveUserData(userData);
+        isOnboardingComplete = true;
+        onboardingOverlay.classList.remove('active');
+        showToast('🎉', 'Welcome!', `Hello ${name}! Let's start learning!`);
+        updateUIWithUserData();
+        renderExploreScreen();
+        renderAccountScreen();
+        switchScreen('welcome');
+        setTimeout(() => {
+            if (checkBirthday()) {
+                showBirthdayPopup();
+            }
+        }, 1500);
+    });
+
+    // ============================================================
+    // SVG ICONS (same)
+    // ============================================================
+    function getCategoryIconSVG(category) {
+        const icons = {
+            'mathematics': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><path d="M20 20L44 44M44 20L20 44" stroke="#a67b5e" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="32" r="6" fill="#a67b5e" opacity="0.3" stroke="#a67b5e" stroke-width="2"/><circle cx="20" cy="20" r="3" fill="#c8956e"/><circle cx="44" cy="20" r="3" fill="#c8956e"/><circle cx="20" cy="44" r="3" fill="#c8956e"/><circle cx="44" cy="44" r="3" fill="#c8956e"/></svg>`,
+            'science': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><path d="M32 12V52M12 32H52M22 22L42 42M42 22L22 42" stroke="#a67b5e" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="32" r="8" stroke="#a67b5e" stroke-width="2.5"/><circle cx="32" cy="32" r="3" fill="#c8956e"/></svg>`,
+            'art': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><circle cx="32" cy="28" r="10" stroke="#a67b5e" stroke-width="2.5"/><path d="M22 28L14 50M42 28L50 50M18 40H46" stroke="#a67b5e" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="28" r="3" fill="#c8956e"/><rect x="28" y="48" width="8" height="4" rx="2" fill="#c8956e" opacity="0.5"/></svg>`,
+            'social_study': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><circle cx="32" cy="24" r="8" stroke="#a67b5e" stroke-width="2.5"/><path d="M20 44C20 36 24 32 32 32C40 32 44 36 44 44" stroke="#a67b5e" stroke-width="2.5"/><rect x="16" y="44" width="32" height="4" rx="2" stroke="#a67b5e" stroke-width="2.5"/><circle cx="32" cy="24" r="3" fill="#c8956e"/></svg>`,
+            'history': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><rect x="18" y="18" width="28" height="28" rx="4" stroke="#a67b5e" stroke-width="2.5"/><path d="M18 26H46M18 34H46M18 42H46" stroke="#a67b5e" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="22" r="3" fill="#c8956e"/></svg>`,
+            'geography': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><circle cx="32" cy="32" r="16" stroke="#a67b5e" stroke-width="2.5"/><path d="M32 16C24 16 16 24 16 32C16 40 24 48 32 48C40 48 48 40 48 32C48 24 40 16 32 16Z" stroke="#a67b5e" stroke-width="1.5"/><path d="M32 16V48M16 32H48" stroke="#a67b5e" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="32" cy="32" r="4" fill="#c8956e"/></svg>`,
+            'sports': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><circle cx="32" cy="32" r="12" stroke="#a67b5e" stroke-width="2.5"/><path d="M24 24L40 40M40 24L24 40" stroke="#a67b5e" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="32" r="4" fill="#c8956e"/></svg>`,
+            'entertainment': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><rect x="18" y="22" width="28" height="20" rx="6" stroke="#a67b5e" stroke-width="2.5"/><circle cx="32" cy="32" r="4" fill="#c8956e"/><circle cx="25" cy="32" r="1.5" fill="#a67b5e"/><circle cx="39" cy="32" r="1.5" fill="#a67b5e"/><path d="M28 38L36 38" stroke="#a67b5e" stroke-width="2" stroke-linecap="round"/></svg>`,
+            'technology': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><rect x="16" y="20" width="32" height="24" rx="4" stroke="#a67b5e" stroke-width="2.5"/><rect x="24" y="44" width="16" height="4" rx="2" stroke="#a67b5e" stroke-width="2.5"/><circle cx="32" cy="32" r="4" fill="#c8956e"/></svg>`,
+            'food': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><path d="M24 20L24 44M40 20L40 44M20 32L44 32" stroke="#a67b5e" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="32" r="10" stroke="#a67b5e" stroke-width="2"/><circle cx="32" cy="32" r="4" fill="#c8956e"/></svg>`,
+            'business': `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#c8956e" opacity="0.1"/><circle cx="32" cy="32" r="30" stroke="#a67b5e" stroke-width="2"/><rect x="18" y="26" width="28" height="20" rx="4" stroke="#a67b5e" stroke-width="2.5"/><path d="M26 34L32 40L38 34" stroke="#a67b5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="3" fill="#c8956e"/></svg>`
+        };
+        return icons[category] || icons['mathematics'];
+    }
+    function getQuestionIconSVG(index) {
+        return `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#c8956e" opacity="0.08"/><circle cx="24" cy="24" r="20" stroke="#a67b5e" stroke-width="2"/><text x="24" y="30" font-size="20" text-anchor="middle" fill="#a67b5e" font-weight="700">${index + 1}</text></svg>`;
+    }
+    function getDecorSVGs(category) {
+        const decorMap = {
+            'mathematics': ['➕','✖️','➗','📊'],
+            'science': ['🧪','⚗️','🧬','🔭'],
+            'art': ['🖌️','🖼️','✏️','🎭'],
+            'social_study': ['🌍','🗺️','🏛️','📜'],
+            'history': ['🏛️','⚔️','👑','📖'],
+            'geography': ['🌍','🏔️','🌊','🏜️'],
+            'sports': ['🏀','🎾','🏏','🏆'],
+            'entertainment': ['🎵','🎶','📺','🎭'],
+            'technology': ['📱','🖥️','🤖','⌨️'],
+            'food': ['🍕','🍔','🍣','🧁'],
+            'business': ['💼','📈','🏢','💰']
+        };
+        const decor = decorMap[category] || ['✨','⭐','🌟','💫'];
+        return decor.map(d => `<span class="decor-svg">${d}</span>`).join('');
+    }
+
+    // ============================================================
+    // CATEGORIES & QUESTIONS
+    // ============================================================
+    const CATEGORIES = {
+        'mathematics': { name: 'Mathematics', icon: '📐', questions: [] },
+        'science': { name: 'Science', icon: '🔬', questions: [] },
+        'art': { name: 'Art', icon: '🎨', questions: [] },
+        'social_study': { name: 'Social Study', icon: '📚', questions: [] },
+        'history': { name: 'History', icon: '📜', questions: [] },
+        'geography': { name: 'Geography', icon: '🗺️', questions: [] },
+        'sports': { name: 'Sports', icon: '⚽', questions: [] },
+        'entertainment': { name: 'Entertainment', icon: '🎬', questions: [] },
+        'technology': { name: 'Technology', icon: '💻', questions: [] },
+        'food': { name: 'Food & Drink', icon: '🍜', questions: [] },
+        'business': { name: 'Business', icon: '📊', questions: [] }
+    };
+
+    function generateQuestions() {
+        const qSets = {
+            mathematics: [
+                { q: "What is 7 × 8?", opts: ["54","56","58","52"], ans: 1 },
+                { q: "What is the square root of 144?", opts: ["10","11","12","13"], ans: 2 },
+                { q: "What is 15 + 27?", opts: ["40","42","44","45"], ans: 1 },
+                { q: "What is 100 ÷ 4?", opts: ["20","25","30","35"], ans: 1 },
+                { q: "What is 9 × 9?", opts: ["79","81","83","85"], ans: 1 },
+                { q: "Area of rectangle 5×3?", opts: ["8","15","16","10"], ans: 1 },
+                { q: "What is 2⁵?", opts: ["16","32","64","128"], ans: 1 },
+                { q: "Perimeter of square side 6?", opts: ["12","24","36","48"], ans: 1 },
+                { q: "3.5 + 2.5?", opts: ["5","6","7","8"], ans: 1 },
+                { q: "Value of π?", opts: ["3.14","3.41","4.14","2.14"], ans: 0 },
+                { q: "25% of 200?", opts: ["25","50","75","100"], ans: 1 },
+                { q: "LCM of 4 and 6?", opts: ["10","12","14","16"], ans: 1 },
+                { q: "0.5 × 0.5?", opts: ["0.25","0.5","1","0.75"], ans: 0 },
+                { q: "What is 6 × 7?", opts: ["40","42","44","48"], ans: 1 },
+                { q: "What is 81 ÷ 9?", opts: ["7","8","9","10"], ans: 2 }
+            ],
+            science: [
+                { q: "Chemical symbol for water?", opts: ["H2O","CO2","NaCl","HCl"], ans: 0 },
+                { q: "Red Planet?", opts: ["Venus","Mars","Jupiter","Saturn"], ans: 1 },
+                { q: "Hardest natural substance?", opts: ["Gold","Iron","Diamond","Platinum"], ans: 2 },
+                { q: "Human bones count?", opts: ["206","205","207","208"], ans: 0 },
+                { q: "Speed of light?", opts: ["300k km/s","150k km/s","500k km/s","1M km/s"], ans: 0 },
+                { q: "Element symbol 'Au'?", opts: ["Silver","Gold","Iron","Copper"], ans: 1 },
+                { q: "Largest organ in body?", opts: ["Liver","Heart","Skin","Lungs"], ans: 2 },
+                { q: "Most abundant gas?", opts: ["Oxygen","Nitrogen","CO2","Argon"], ans: 1 },
+                { q: "Smallest planet?", opts: ["Mercury","Venus","Mars","Pluto"], ans: 0 },
+                { q: "Human chromosomes?", opts: ["44","46","48","23"], ans: 1 },
+                { q: "Boiling point of water?", opts: ["90°C","100°C","110°C","80°C"], ans: 1 },
+                { q: "Vitamin from sunlight?", opts: ["A","B12","C","D"], ans: 3 },
+                { q: "Largest internal organ?", opts: ["Liver","Brain","Lungs","Heart"], ans: 0 },
+                { q: "Smallest bone?", opts: ["Stapes","Incus","Malleus","Femur"], ans: 0 },
+                { q: "Adult teeth count?", opts: ["28","30","32","34"], ans: 2 }
+            ],
+            art: [
+                { q: "Who painted Mona Lisa?", opts: ["Van Gogh","Picasso","Da Vinci","Rembrandt"], ans: 2 },
+                { q: "Most famous painting?", opts: ["Mona Lisa","Starry Night","The Scream","Guernica"], ans: 0 },
+                { q: "Known for surrealism?", opts: ["Dali","Picasso","Monet","Van Gogh"], ans: 0 },
+                { q: "Oldest known art?", opts: ["Cave Paintings","Egyptian Art","Greek Sculpture","Roman Mosaics"], ans: 0 },
+                { q: "Who sculpted David?", opts: ["Michaelangelo","Donatello","Raphael","Leonardo"], ans: 0 },
+                { q: "Starry Night artist?", opts: ["Van Gogh","Monet","Picasso","Dali"], ans: 0 },
+                { q: "Pottery art called?", opts: ["Ceramics","Sculpture","Painting","Mosaic"], ans: 0 },
+                { q: "Mona Lisa museum?", opts: ["Louvre","British","Met","Prado"], ans: 0 },
+                { q: "Dali's style?", opts: ["Cubism","Surrealism","Impressionism","Abstract"], ans: 1 },
+                { q: "Most famous sculpture?", opts: ["David","Thinker","Venus","Winged Victory"], ans: 0 }
+            ],
+            social_study: [
+                { q: "US capital?", opts: ["NYC","Washington DC","Chicago","LA"], ans: 1 },
+                { q: "Oldest democracy?", opts: ["USA","UK","Iceland","India"], ans: 2 },
+                { q: "Largest population?", opts: ["India","China","USA","Indonesia"], ans: 0 },
+                { q: "Largest continent?", opts: ["Africa","Asia","N. America","Europe"], ans: 1 },
+                { q: "Brazil's language?", opts: ["Spanish","Portuguese","English","French"], ans: 1 },
+                { q: "UK currency?", opts: ["Euro","Dollar","Pound","Yen"], ans: 2 },
+                { q: "Most islands?", opts: ["Indonesia","Sweden","Philippines","Japan"], ans: 1 },
+                { q: "Australia's national animal?", opts: ["Kangaroo","Koala","Emu","Platypus"], ans: 0 },
+                { q: "Smallest country?", opts: ["Monaco","Vatican City","San Marino","Liechtenstein"], ans: 1 },
+                { q: "Most UNESCO sites?", opts: ["Italy","China","Spain","France"], ans: 0 },
+                { q: "Tallest building?", opts: ["Burj Khalifa","Shanghai Tower","One World Trade","Petronas"], ans: 0 },
+                { q: "Spain's national dish?", opts: ["Tapas","Sangria","Gazpacho","Paella"], ans: 3 }
+            ],
+            history: [
+                { q: "WWII end year?", opts: ["1944","1945","1946","1947"], ans: 1 },
+                { q: "First US President?", opts: ["Washington","Adams","Jefferson","Lincoln"], ans: 0 },
+                { q: "Longest war?", opts: ["WWII","Vietnam","Cold War","Hundred Years"], ans: 2 },
+                { q: "Built Colosseum?", opts: ["Greek","Roman","Egyptian","Persian"], ans: 1 },
+                { q: "Discovered America?", opts: ["Columbus","Vespucci","Magellan","Cook"], ans: 0 },
+                { q: "First civilization?", opts: ["Egyptian","Mesopotamian","Indus","Chinese"], ans: 1 },
+                { q: "French Revolution year?", opts: ["1789","1799","1776","1800"], ans: 0 },
+                { q: "Communist Manifesto writer?", opts: ["Lenin","Marx","Engels","Stalin"], ans: 1 },
+                { q: "Cold War between?", opts: ["USA/USSR","USA/China","UK/Russia","France/Germany"], ans: 0 },
+                { q: "Built pyramids?", opts: ["Egyptian","Mayan","Aztec","Roman"], ans: 0 },
+                { q: "Iron Lady?", opts: ["Indira Gandhi","Margaret Thatcher","Angela Merkel","Golda Meir"], ans: 1 },
+                { q: "Berlin Wall fall year?", opts: ["1989","1990","1991","1988"], ans: 0 }
+            ],
+            geography: [
+                { q: "Longest river?", opts: ["Amazon","Nile","Yangtze","Mississippi"], ans: 1 },
+                { q: "Highest mountain?", opts: ["K2","Everest","Kilimanjaro","Denali"], ans: 1 },
+                { q: "Largest desert?", opts: ["Sahara","Gobi","Kalahari","Arabian"], ans: 0 },
+                { q: "Smallest continent?", opts: ["Europe","Australia","Antarctica","S. America"], ans: 1 },
+                { q: "Largest ocean?", opts: ["Atlantic","Pacific","Indian","Arctic"], ans: 1 },
+                { q: "Australia capital?", opts: ["Sydney","Melbourne","Canberra","Perth"], ans: 2 },
+                { q: "Countries in Africa?", opts: ["54","53","55","52"], ans: 0 },
+                { q: "Most lakes?", opts: ["Canada","Finland","Sweden","USA"], ans: 0 },
+                { q: "Driest place?", opts: ["Sahara","Atacama","Gobi","Death Valley"], ans: 1 },
+                { q: "NZ capital?", opts: ["Auckland","Wellington","Christchurch","Hamilton"], ans: 1 },
+                { q: "Largest island?", opts: ["Greenland","New Guinea","Borneo","Madagascar"], ans: 0 },
+                { q: "Longest mountain range?", opts: ["Andes","Himalayas","Rockies","Alps"], ans: 0 }
+            ],
+            sports: [
+                { q: "King of sports?", opts: ["Cricket","Soccer","Basketball","Tennis"], ans: 1 },
+                { q: "Football team players?", opts: ["9","10","11","12"], ans: 2 },
+                { q: "Basketball invented by?", opts: ["UK","USA","Canada","Germany"], ans: 1 },
+                { q: "Fastest ball sport?", opts: ["Tennis","Badminton","Squash","Jai Alai"], ans: 3 },
+                { q: "Uses shuttlecock?", opts: ["Badminton","Tennis","Squash","Pickleball"], ans: 0 },
+                { q: "Marathon length?", opts: ["40km","42.195km","45km","50km"], ans: 1 },
+                { q: "Most World Cups?", opts: ["Brazil","Italy","Germany","Argentina"], ans: 0 },
+                { q: "Darts highest score?", opts: ["180","170","160","150"], ans: 0 },
+                { q: "Played on ice?", opts: ["Hockey","Curling","Skating","All"], ans: 3 },
+                { q: "F1 race laps?", opts: ["50-60","60-70","70-80","40-50"], ans: 0 }
+            ],
+            entertainment: [
+                { q: "First Oscar winner?", opts: ["Wings","Sunrise","Jazz Singer","Wings"], ans: 0 },
+                { q: "King of Pop?", opts: ["MJ","Elvis","Prince","Bowie"], ans: 0 },
+                { q: "Longest TV show?", opts: ["Simpsons","Days","SNL","Doctor Who"], ans: 0 },
+                { q: "Bohemian Rhapsody band?", opts: ["Beatles","Queen","Led Zeppelin","Pink Floyd"], ans: 1 },
+                { q: "Best-selling book?", opts: ["Harry Potter","Bible","Lord Rings","Gone with Wind"], ans: 1 },
+                { q: "Titanic director?", opts: ["Cameron","Spielberg","Tarantino","Scorsese"], ans: 0 },
+                { q: "Most watched show?", opts: ["Game of Thrones","Walking Dead","Breaking Bad","The Crown"], ans: 0 }
+            ],
+            technology: [
+                { q: "Microsoft co-founder?", opts: ["Jobs","Gates","Zuckerberg","Page"], ans: 1 },
+                { q: "AI stands for?", opts: ["Artificial Info","Artificial Intelligence","Advanced Intelligence","Applied Intel"], ans: 1 },
+                { q: "First smartphone company?", opts: ["Apple","IBM","Nokia","BlackBerry"], ans: 1 },
+                { q: "Most used programming language?", opts: ["Python","Java","C++","JavaScript"], ans: 3 },
+                { q: "Cloud computing?", opts: ["Storage","Internet","Network","All"], ans: 3 },
+                { q: "World Wide Web inventor?", opts: ["Berners-Lee","Gates","Jobs","Page"], ans: 0 },
+                { q: "RAM stands for?", opts: ["Random Access Memory","Read Access","Real Access","Run Access"], ans: 0 }
+            ],
+            food: [
+                { q: "Most eaten food?", opts: ["Rice","Wheat","Corn","Potatoes"], ans: 0 },
+                { q: "Pizza invented in?", opts: ["Italy","Greece","USA","France"], ans: 0 },
+                { q: "Most expensive spice?", opts: ["Saffron","Vanilla","Cinnamon","Cardamom"], ans: 0 },
+                { q: "Most popular drink?", opts: ["Coffee","Tea","Water","Milk"], ans: 2 },
+                { q: "Most cheese production?", opts: ["USA","France","Italy","Germany"], ans: 0 }
+            ],
+            business: [
+                { q: "Most valuable company?", opts: ["Apple","Microsoft","Google","Amazon"], ans: 0 },
+                { q: "Largest bank?", opts: ["JPMorgan","Bank America","ICBC","Wells Fargo"], ans: 2 },
+                { q: "Most profitable company?", opts: ["Saudi Aramco","Apple","Google","Microsoft"], ans: 0 },
+                { q: "Stock market?", opts: ["Market","Exchange","Trading","All"], ans: 3 },
+                { q: "Richest person?", opts: ["Musk","Bezos","Arnault","Gates"], ans: 0 }
+            ]
+        };
+        Object.keys(CATEGORIES).forEach(key => {
+            const qArr = qSets[key] || [];
+            let fullList = [];
+            for (let i = 0; i < 10; i++) fullList = fullList.concat(qArr.map(q => ({ question: q.q, options: q.opts, correct: q.ans })));
+            for (let i = fullList.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [fullList[i], fullList[j]] = [fullList[j], fullList[i]]; }
+            CATEGORIES[key].questions = fullList.slice(0, 100);
+        });
+    }
+    generateQuestions();
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+    function switchScreen(screenId) {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        const screens = [welcomeScreen, exploreScreen, accountScreen, settingsScreen, evaluationScreen, quizScreen, resultScreen];
+        screens.forEach(el => el.classList.remove('active'));
+        let target;
+        if (screenId === 'welcome') target = welcomeScreen;
+        else if (screenId === 'explore') target = exploreScreen;
+        else if (screenId === 'account') target = accountScreen;
+        else if (screenId === 'settings') target = settingsScreen;
+        else if (screenId === 'evaluation') target = evaluationScreen;
+        else if (screenId === 'quiz') target = quizScreen;
+        else if (screenId === 'result') target = resultScreen;
+        if (target) {
+            requestAnimationFrame(() => {
+                target.classList.add('active');
+                if (screenId === 'welcome') bottomNav.classList.remove('show');
+                else bottomNav.classList.add('show');
+                if (screenId === 'evaluation') updateEvaluationScreen();
+                if (screenId === 'account') renderAccountScreen();
+                if (screenId === 'explore') renderExploreScreen();
+                setTimeout(() => { isTransitioning = false; }, 50);
+            });
+        } else isTransitioning = false;
+    }
+
+    // ============================================================
+    // GREETING
+    // ============================================================
+    function getTimeBasedGreeting() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return { timeOfDay: 'Morning', icon: '🌅', action: 'Ready to learn something new?' };
+        if (hour >= 12 && hour < 17) return { timeOfDay: 'Afternoon', icon: '☀️', action: 'Keep up the great learning!' };
+        if (hour >= 17 && hour < 21) return { timeOfDay: 'Evening', icon: '🌆', action: 'Time for some quiz fun!' };
+        return { timeOfDay: 'Night', icon: '🌙', action: 'Learning never stops, does it?' };
+    }
+    function updateGreeting() {
+        const userData = loadUserData();
+        const name = userData ? userData.fullName : 'Learner';
+        const g = getTimeBasedGreeting();
+        greetingName.textContent = name;
+        greetingTime.textContent = g.timeOfDay;
+        greetingIcon.textContent = g.icon;
+        greetingAction.textContent = g.action;
+    }
+    function updateAvatarBubble() {
+        const userData = loadUserData();
+        const name = userData ? userData.fullName : 'Learner';
+        bubbleName.textContent = name;
+        const messages = ['tap Start Quiz to begin!','are you ready to learn?','let\'s have some fun!','knowledge is power!','you\'re awesome!'];
+        bubbleAction.textContent = messages[Math.floor(Math.random() * messages.length)];
+    }
+
+   
+    // ============================================================
+    // RESULT SUMMARY POPUP
+    // ============================================================
+    function showResultSummary(percent, correct, wrong, total) {
+        const userData = loadUserData();
+        const name = userData ? userData.fullName : 'Learner';
+        const stats = loadStatsFromStorage();
+        const prevCorrect = stats.totalCorrect || 0;
+        const prevWrong = stats.totalWrong || 0;
+        const prevPercent = (prevCorrect + prevWrong) > 0 ? Math.round((prevCorrect / (prevCorrect + prevWrong)) * 100) : 0;
+       
+        const diff = percent - prevPercent;
+        let comparison = '';
+        if (diff > 5) comparison = `🔥 You've improved by ${diff}% compared to your previous average!`;
+        else if (diff < -5) comparison = `📉 Your score dropped by ${Math.abs(diff)}% from your previous average. Let's bounce back!`;
+        else comparison = `📊 You're consistent! Your score is within ${Math.abs(diff)}% of your previous average.`;
+
+        resultSummaryContent.innerHTML = `
+            <div class="summary-icon">${icon}</div>
+            <div class="summary-title">${emoji} Quiz Complete!</div>
+            <div class="summary-sub">Here's how you performed</div>
+            
+            <div class="summary-stats">
+                <div class="summary-stat"><div class="num">${correct}</div><div class="lbl">Correct</div></div>
+                <div class="summary-stat"><div class="num">${wrong}</div><div class="lbl">Wrong</div></div>
+                <div class="summary-stat"><div class="num">${total}</div><div class="lbl">Total</div></div>
+            </div>
+            
+            <div class="summary-chart">
+                <div class="mini-ring">
+                    <svg width="70" height="70" viewBox="0 0 70 70">
+                        <circle class="bg" cx="35" cy="35" r="28" />
+                        <circle class="prog" id="summaryRing" cx="35" cy="35" r="28" 
+                            stroke-dasharray="${2 * Math.PI * 28}" 
+                            stroke-dashoffset="${2 * Math.PI * 28 * (1 - percent/100)}" />
+                    </svg>
+                    <div class="center-text">${percent}%</div>
+                </div>
+                <div class="mini-legend">
+                    <span><span class="dot" style="background:#a67b5e;"></span> This quiz</span>
+                    <span><span class="dot" style="background:rgba(139,107,80,0.3);"></span> Previous: ${prevPercent}%</span>
+                </div>
+            </div>
+            
+            <div class="summary-msg">
+                ${msg}
+                <br><br>
+                <span class="highlight">${comparison}</span>
+            </div>
+            
+            <div class="summary-buttons">
+                <button class="btn btn-secondary" id="summaryHomeBtn">🏠 Home</button>
+                <button class="btn" id="summaryContinueBtn">🚀 Continue</button>
+            </div>
+        `;
+        resultSummaryPopup.classList.add('active');
+        
+        setTimeout(() => {
+            const homeBtn = document.getElementById('summaryHomeBtn');
+            const continueBtn = document.getElementById('summaryContinueBtn');
+            if (homeBtn) homeBtn.addEventListener('click', function() {
+                resultSummaryPopup.classList.remove('active');
+                goHome();
+            }, { passive: true });
+            if (continueBtn) continueBtn.addEventListener('click', function() {
+                resultSummaryPopup.classList.remove('active');
+                goToExplore();
+            }, { passive: true });
+        }, 100);
+    }
+
+    // ============================================================
+    // EVALUATION
+    // ============================================================
+    function updateEvaluationScreen() {
+        const stats = loadStatsFromStorage();
+        const totalCorrect = stats.totalCorrect || 0;
+        const totalWrong = stats.totalWrong || 0;
+        const totalQuizzes = stats.totalQuizzes || 0;
+        const totalAttempted = totalCorrect + totalWrong;
+        const accuracy = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+        evalQuizzes.textContent = totalQuizzes;
+        evalCorrect.textContent = totalCorrect;
+        evalWrong.textContent = totalWrong;
+        evalAccuracy.textContent = accuracy + '%';
+        const circumference = 201;
+        evalProgressRing.style.strokeDashoffset = circumference - (accuracy / 100) * circumference;
+        evalRingPercent.textContent = accuracy + '%';
+        let message = 'Start your first quiz to see progress!';
+        let level = 'Beginner';
+        if (totalQuizzes >= 1 && totalQuizzes <= 3) { message = '🌟 Great start! Keep learning and exploring!'; level = 'Explorer'; }
+        else if (totalQuizzes >= 4 && totalQuizzes <= 8) { message = '📈 You\'re building knowledge steadily! Keep going!'; level = 'Learner'; }
+        else if (totalQuizzes >= 9 && totalQuizzes <= 15) { message = '🔥 Amazing progress! You\'re becoming a quiz master!'; level = 'Master'; }
+        else if (totalQuizzes > 15) { message = '🏆 Outstanding! You\'re a true knowledge champion!'; level = 'Champion'; }
+        evalGrowthMessage.textContent = message;
+        evalLevel.textContent = 'Level: ' + level;
+        updateCategoryBars(stats.categoryStats || {});
+    }
+    function updateCategoryBars(categoryStats) {
+        const barContainer = evalChartBars;
+        barContainer.innerHTML = '';
+        const categories = [
+            { key: 'mathematics', label: 'Math' },
+            { key: 'science', label: 'Science' },
+            { key: 'art', label: 'Art' },
+            { key: 'social_study', label: 'Social' },
+            { key: 'history', label: 'History' },
+            { key: 'geography', label: 'Geo' },
+            { key: 'sports', label: 'Sports' },
+            { key: 'entertainment', label: 'Entertain' },
+            { key: 'technology', label: 'Tech' },
+            { key: 'food', label: 'Food' },
+            { key: 'business', label: 'Business' }
+        ];
+        let maxValue = 0;
+        categories.forEach(cat => { const s = categoryStats[cat.key] || { correct: 0, wrong: 0 }; const total = s.correct + s.wrong; if (total > maxValue) maxValue = total; });
+        if (maxValue === 0) maxValue = 1;
+        categories.forEach(cat => {
+            const s = categoryStats[cat.key] || { correct: 0, wrong: 0 };
+            const percent = maxValue > 0 ? (s.correct / maxValue) * 100 : 0;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chart-bar-wrapper';
+            const bar = document.createElement('div');
+            bar.className = 'chart-bar';
+            bar.style.height = Math.max(4, percent * 0.8) + '%';
+            const label = document.createElement('div');
+            label.className = 'chart-bar-label';
+            label.textContent = cat.label;
+            wrapper.appendChild(bar);
+            wrapper.appendChild(label);
+            barContainer.appendChild(wrapper);
+        });
+    }
+    function loadStatsFromStorage() {
+        try { const data = localStorage.getItem('quizzy_evaluation_stats'); if (data) return JSON.parse(data); } catch (e) {}
+        return { totalCorrect: 0, totalWrong: 0, totalQuizzes: 0, categoryStats: {} };
+    }
+    function saveStatsToStorage(stats) { try { localStorage.setItem('quizzy_evaluation_stats', JSON.stringify(stats)); } catch (e) {} }
+    function updateEvaluationStats(categoryKey, correct, wrong) {
+        const stats = loadStatsFromStorage();
+        stats.totalCorrect = (stats.totalCorrect || 0) + correct;
+        stats.totalWrong = (stats.totalWrong || 0) + wrong;
+        stats.totalQuizzes = (stats.totalQuizzes || 0) + 1;
+        if (!stats.categoryStats) stats.categoryStats = {};
+        if (!stats.categoryStats[categoryKey]) stats.categoryStats[categoryKey] = { correct: 0, wrong: 0 };
+        stats.categoryStats[categoryKey].correct = (stats.categoryStats[categoryKey].correct || 0) + correct;
+        stats.categoryStats[categoryKey].wrong = (stats.categoryStats[categoryKey].wrong || 0) + wrong;
+        saveStatsToStorage(stats);
+    }
+
+    // ============================================================
+    // STAR POINTS & VIP
+    // ============================================================
+    function saveStarPoints() {
+        try { localStorage.setItem('quizzy_star_points', JSON.stringify(starPoints)); } catch (e) {}
+    }
+    function loadStarPoints() {
+        try { const data = localStorage.getItem('quizzy_star_points'); if (data) { starPoints = JSON.parse(data); } } catch (e) {}
+    }
+    function updateVIPStatus() {
+        const vip = starPoints >= 200;
+        if (vip) {
+            accountHeader.classList.add('vip');
+            accountHeader.classList.add('vip-shine');
+            vipBadge.style.display = 'block';
+            vipBadge.textContent = '👑 VIP';
+        } else {
+            const birthdayClaimedDate = localStorage.getItem('quizzy_birthday_claimed');
+            const today = new Date().toDateString();
+            if (birthdayClaimedDate === today) {
+                accountHeader.classList.add('vip');
+                accountHeader.classList.add('vip-shine');
+                vipBadge.style.display = 'block';
+                vipBadge.textContent = '🎂 Birthday VIP';
+            } else {
+                accountHeader.classList.remove('vip');
+                accountHeader.classList.remove('vip-shine');
+                vipBadge.style.display = 'none';
+            }
+        }
+    }
+
+    // ============================================================
+    // BIRTHDAY CHECK
+    // ============================================================
+    function checkBirthday() {
+        const userData = loadUserData();
+        if (!userData || !userData.dob) return false;
+        try {
+            const today = new Date();
+            const dob = new Date(userData.dob);
+            return today.getMonth() === dob.getMonth() && today.getDate() === dob.getDate();
+        } catch(e) { return false; }
+    }
+
+    function showBirthdayPopup() {
+        const userData = loadUserData();
+        const name = userData ? userData.fullName : 'Learner';
+        birthdayName.textContent = name;
+        const lastClaimed = localStorage.getItem('quizzy_birthday_claimed');
+        const today = new Date().toDateString();
+        if (lastClaimed === today) {
+            birthdayClaimed = true;
+            birthdayMsg.innerHTML = `
+                Dear <span class="highlight">${name}</span>,<br>
+                You've already claimed your birthday gift today! 🎉<br>
+                Enjoy your special day! 🌟
+            `;
+            birthdayClaimBtn.textContent = '🎉 Already Claimed';
+            birthdayClaimBtn.disabled = true;
+            birthdayClaimBtn.style.opacity = '0.5';
+        } else {
+            birthdayClaimed = false;
+            birthdayMsg.innerHTML = `
+                Dear <span class="highlight">${name}</span>,<br>
+                Wishing you a day filled with joy, laughter, and endless knowledge! 🌟<br>
+                You're a star and today is YOUR day! ✨
+            `;
+            birthdayClaimBtn.textContent = '🎁 Claim Gift';
+            birthdayClaimBtn.disabled = false;
+            birthdayClaimBtn.style.opacity = '1';
+        }
+        birthdayPopup.classList.add('active');
+        birthdayBadge.style.display = 'block';
+        accountHeader.classList.add('birthday');
+    }
+
+    function claimBirthdayGift() {
+        if (birthdayClaimed) {
+            showToast('🎉', 'Already Claimed!', 'You already got your birthday gift today!');
+            birthdayPopup.classList.remove('active');
+            return;
+        }
+        starPoints += 50;
+        saveStarPoints();
+        accountHeader.classList.add('vip');
+        accountHeader.classList.add('vip-shine');
+        vipBadge.style.display = 'block';
+        vipBadge.textContent = '🎂 Birthday VIP';
+        birthdayClaimed = true;
+        localStorage.setItem('quizzy_birthday_claimed', new Date().toDateString());
+        birthdayPopup.classList.remove('active');
+        showToast('🎁', 'Happy Birthday!', 'You received 50 bonus star points and Birthday VIP badge! 🎉');
+        renderAccountScreen();
+        updateUIWithUserData();
+    }
+
+    // ============================================================
+    // DAILY TASKS
+    // ============================================================
+    function getDailyTasks() {
+        const tasks = [
+            { id: 'task1', icon: '📝', name: 'Complete 1 quiz', target: 1, progress: 0, reward: 15, claimed: false },
+            { id: 'task2', icon: '⭐', name: 'Get 5 correct answers', target: 5, progress: 0, reward: 10, claimed: false },
+            { id: 'task3', icon: '🔥', name: 'Score 80%+ in a quiz', target: 1, progress: 0, reward: 25, claimed: false },
+            { id: 'task4', icon: '🏆', name: 'Play 3 quizzes', target: 3, progress: 0, reward: 20, claimed: false }
+        ];
+        try {
+            const stored = localStorage.getItem('quizzy_daily_tasks');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (new Date().toDateString() === parsed.date) {
+                    return parsed.tasks;
+                }
+            }
+        } catch(e) {}
+        return tasks;
+    }
+    function saveDailyTasks(tasks) {
+        try { localStorage.setItem('quizzy_daily_tasks', JSON.stringify({ date: new Date().toDateString(), tasks: tasks })); } catch(e) {}
+    }
+    function updateDailyTasks(correct, scorePercent) {
+        let tasks = getDailyTasks();
+        tasks.forEach(task => {
+            if (task.id === 'task1' && task.progress < task.target) task.progress = Math.min(task.target, task.progress + 1);
+            if (task.id === 'task2') task.progress = Math.min(task.target, task.progress + correct);
+            if (task.id === 'task3' && scorePercent >= 80 && task.progress < task.target) task.progress = task.target;
+            if (task.id === 'task4') task.progress = Math.min(task.target, task.progress + 1);
+        });
+        saveDailyTasks(tasks);
+        renderAccountScreen();
+        renderExploreScreen();
+    }
+    function renderDailyTasks(container) {
+        const tasks = getDailyTasks();
+        container.innerHTML = '';
+        tasks.forEach(task => {
+            const div = document.createElement('div');
+            div.className = 'daily-task' + (task.progress >= task.target ? ' completed' : '');
+            const status = task.progress >= task.target ? '✅ Done' : `${task.progress}/${task.target}`;
+            const isComplete = task.progress >= task.target;
+            const isClaimed = task.claimed || false;
+            let claimBtn = '';
+            if (isComplete && !isClaimed) {
+                claimBtn = `<button class="claim-btn shine" data-taskid="${task.id}">Claim +${task.reward}⭐</button>`;
+            } else if (isComplete && isClaimed) {
+                claimBtn = `<span style="font-size:0.7rem; color:#2a9d5a;">✅ Claimed</span>`;
+            } else {
+                claimBtn = `<span style="font-size:0.7rem; color:rgba(90,61,43,0.3);">🔒 Locked</span>`;
+            }
+            div.innerHTML = `
+                <span class="task-icon">${task.icon}</span>
+                <div class="task-info">
+                    <div class="task-name">${task.name}</div>
+                    <div class="task-progress">${status}</div>
+                </div>
+                <span class="task-reward">+${task.reward}⭐</span>
+                ${claimBtn}
+            `;
+            container.appendChild(div);
+            const btn = div.querySelector('.claim-btn');
+            if (btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const taskId = this.dataset.taskid;
+                    showClaimPopup(taskId);
+                }, { passive: true });
+            }
+        });
+    }
+    function showClaimPopup(taskId) {
+        const tasks = getDailyTasks();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || task.claimed) return;
+        pendingClaimTaskId = taskId;
+        claimPopupMsg.innerHTML = `You earned <strong>+${task.reward}</strong> star points!`;
+        claimPopup.classList.add('active');
+    }
+    function claimTask(taskId) {
+        let tasks = getDailyTasks();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || task.claimed) return;
+        task.claimed = true;
+        starPoints += task.reward;
+        saveStarPoints();
+        saveDailyTasks(tasks);
+        updateVIPStatus();
+        renderAccountScreen();
+        renderExploreScreen();
+        claimPopup.classList.remove('active');
+        const messages = [
+            { icon: '🎉', title: 'Amazing!', msg: `You claimed ${task.reward} star points! Keep it up!` },
+            { icon: '🌟', title: 'Star Power!', msg: `+${task.reward} points added to your account!` },
+            { icon: '✨', title: 'Great Job!', msg: `You earned ${task.reward} star points!` },
+            { icon: '🏅', title: 'Well Done!', msg: `${task.reward} star points claimed successfully!` },
+            { icon: '⭐', title: 'Awesome!', msg: `You're on fire! +${task.reward} points!` }
+        ];
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+        showToast(randomMsg.icon, randomMsg.title, randomMsg.msg);
+    }
+
+    // ============================================================
+    // ACHIEVEMENTS
+    // ============================================================
+    function getAchievements() {
+        const stats = loadStatsFromStorage();
+        const totalCorrect = stats.totalCorrect || 0;
+        const totalQuizzes = stats.totalQuizzes || 0;
+        const achievements = [
+            { id: 'ach1', icon: '🌟', name: 'First Quiz', desc: 'Complete your first quiz', unlocked: totalQuizzes >= 1 },
+            { id: 'ach2', icon: '⭐', name: 'Star Collector', desc: 'Get 50 correct answers', unlocked: totalCorrect >= 50 },
+            { id: 'ach3', icon: '🔥', name: 'Quiz Master', desc: 'Complete 5 quizzes', unlocked: totalQuizzes >= 5 },
+            { id: 'ach4', icon: '👑', name: 'Knowledge King', desc: 'Get 100 correct answers', unlocked: totalCorrect >= 100 },
+            { id: 'ach5', icon: '🏆', name: 'Champion', desc: 'Complete 10 quizzes', unlocked: totalQuizzes >= 10 },
+            { id: 'ach6', icon: '💎', name: 'Perfectionist', desc: 'Score 90%+ in a quiz', unlocked: false },
+            { id: 'ach7', icon: '🎂', name: 'Birthday Star', desc: 'Celebrate your birthday with Quizzy', unlocked: checkBirthday() && localStorage.getItem('quizzy_birthday_claimed') === new Date().toDateString() }
+        ];
+        try { const perf = localStorage.getItem('quizzy_perfectionist'); if (perf === 'true') achievements[5].unlocked = true; } catch(e) {}
+        return achievements;
+    }
+    function renderAchievements() {
+        const achievements = getAchievements();
+        achievementGrid.innerHTML = '';
+        achievements.forEach(ach => {
+            const div = document.createElement('div');
+            div.className = 'achievement-card' + (ach.unlocked ? ' unlocked' : ' locked');
+            div.innerHTML = `<div class="ach-icon">${ach.icon}</div><div class="ach-name">${ach.name}</div><div class="ach-desc">${ach.desc}</div>`;
+            div.addEventListener('click', function() {
+                showAchievementDetail(ach);
+            }, { passive: true });
+            achievementGrid.appendChild(div);
+        });
+    }
+    function showAchievementDetail(ach) {
+        achDetailIcon.textContent = ach.icon;
+        achDetailName.textContent = ach.name;
+        achDetailDesc.textContent = ach.desc;
+        achDetailStatus.textContent = ach.unlocked ? '✅ Unlocked' : '🔒 Locked';
+        achDetailStatus.className = 'ach-big-status ' + (ach.unlocked ? 'unlocked' : 'locked');
+        achievementDetailPopup.classList.add('active');
+    }
+    function closeAchievementDetail() {
+        achievementDetailPopup.classList.remove('active');
+    }
+
+    // ============================================================
+    // RENDER FUNCTIONS
+    // ============================================================
+    function renderExploreScreen() {
+        renderCategories();
+        updateGreeting();
+    }
+
+    function renderAccountScreen() {
+        updateUIWithUserData();
+        renderAchievements();
+        renderDailyTasks(dailyTasksContainerAccount);
+        updateVIPStatus();
+        if (checkBirthday()) {
+            birthdayBadge.style.display = 'block';
+            accountHeader.classList.add('birthday');
+        } else {
+            birthdayBadge.style.display = 'none';
+            accountHeader.classList.remove('birthday');
+        }
+    }
+
+    // ============================================================
+    // AUTO ADVANCE
+    // ============================================================
+    function startAutoAdvance() {
+        clearAutoAdvance();
+        if (isAnswered && !isAutoAdvancing) {
+            isAutoAdvancing = true;
+            countdownValue = 3;
+            countdownDisplay.textContent = countdownValue;
+            autoTimer.style.display = 'block';
+            autoAdvanceTimer = setInterval(() => {
+                countdownValue--;
+                countdownDisplay.textContent = countdownValue;
+                if (countdownValue <= 0) {
+                    clearAutoAdvance();
+                    isAutoAdvancing = false;
+                    if (isAnswered) goToNext();
+                }
+            }, 1000);
+        }
+    }
+    function clearAutoAdvance() { if (autoAdvanceTimer) { clearInterval(autoAdvanceTimer); autoAdvanceTimer = null; } isAutoAdvancing = false; autoTimer.style.display = 'none'; }
+
+    // ============================================================
+    // CATEGORIES RENDER
+    // ============================================================
+    function renderCategories() {
+        const fragment = document.createDocumentFragment();
+        Object.keys(CATEGORIES).forEach(key => {
+            const cat = CATEGORIES[key];
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            card.innerHTML = `<div class="category-icon-svg">${getCategoryIconSVG(key)}</div><div class="category-name">${cat.name}</div><div class="category-count">${cat.questions.length} questions</div>`;
+            card.addEventListener('click', () => startCategoryQuiz(key), { passive: true });
+            fragment.appendChild(card);
+        });
+        categoryGrid.innerHTML = '';
+        categoryGrid.appendChild(fragment);
+    }
+
+    // ============================================================
+    // QUIZ FUNCTIONS
+    // ============================================================
+    function startCategoryQuiz(categoryKey) {
+        if (isTransitioning) return;
+        currentCategory = categoryKey;
+        const cat = CATEGORIES[categoryKey];
+        let qs = shuffleArray([...cat.questions]);
+        questions = qs.slice(0, Math.min(15, qs.length));
+        totalQuestions = questions.length;
+        currentIndex = 0;
+        score = 0;
+        isAnswered = false;
+        userAnswers = new Array(totalQuestions).fill(null);
+        quizActive = true;
+        switchScreen('quiz');
+        updateBanner(categoryKey);
+        requestAnimationFrame(() => renderQuestion());
+    }
+    function updateBanner(categoryKey) {
+        const cat = CATEGORIES[categoryKey];
+        if (!cat) return;
+        bannerIconSvg.innerHTML = getCategoryIconSVG(categoryKey);
+        bannerTitle.textContent = cat.name;
+        bannerSub.textContent = 'Category';
+        bannerProgress.textContent = `${currentIndex + 1} / ${questions.length}`;
+        questionDecor.innerHTML = getDecorSVGs(categoryKey);
+    }
+    function renderQuestion() {
+        clearAutoAdvance();
+        const q = questions[currentIndex];
+        if (!q) return;
+        questionCounter.textContent = `Question ${currentIndex+1} of ${questions.length}`;
+        liveScore.textContent = `${score}`;
+        questionText.textContent = q.question;
+        questionIconSvg.innerHTML = getQuestionIconSVG(currentIndex);
+        bannerProgress.textContent = `${currentIndex + 1} / ${questions.length}`;
+        const prevAnswer = userAnswers[currentIndex];
+        optionsContainer.innerHTML = '';
+        const optionLetters = ['A','B','C','D'];
+        q.options.forEach((opt, idx) => {
+            const div = document.createElement('div');
+            div.className = 'option';
+            div.innerHTML = `<span class="option-letter">${optionLetters[idx]}.</span><span class="option-text">${opt}</span>`;
+            div.dataset.index = idx;
+            if (prevAnswer === idx) div.classList.add('selected');
+            div.addEventListener('click', () => handleOptionClick(idx), { passive: true });
+            optionsContainer.appendChild(div);
+        });
+        isAnswered = (prevAnswer !== null);
+        if (isAnswered) {
+            const options = document.querySelectorAll('.option');
+            options.forEach(el => el.classList.add('disabled'));
+            const isCorrect = (prevAnswer === q.correct);
+            const selectedEl = options[prevAnswer];
+            if (isCorrect) selectedEl.classList.add('correct');
+            else { selectedEl.classList.add('wrong'); options[q.correct].classList.add('correct'); }
+            startAutoAdvance();
+        }
+        updateNavButtons();
+        autoTimer.style.display = isAnswered ? 'block' : 'none';
+        if (!isAnswered) countdownDisplay.textContent = '3';
+    }
+    function handleOptionClick(index) {
+        if (isAnswered || isTransitioning) return;
+        const q = questions[currentIndex];
+        const options = document.querySelectorAll('.option');
+        options.forEach(el => el.classList.remove('selected'));
+        const selectedEl = options[index];
+        selectedEl.classList.add('selected');
+        isAnswered = true;
+        options.forEach(el => el.classList.add('disabled'));
+        userAnswers[currentIndex] = index;
+        const isCorrect = (index === q.correct);
+        if (isCorrect) { score += 1; liveScore.textContent = `${score}`; selectedEl.classList.add('correct'); }
+        else { selectedEl.classList.add('wrong'); options[q.correct].classList.add('correct'); }
+        updateNavButtons();
+        startAutoAdvance();
+    }
+    function updateNavButtons() {
+        prevBtn.disabled = (currentIndex === 0);
+        prevBtn.style.opacity = (currentIndex === 0) ? '0.3' : '1';
+        const isLast = (currentIndex === questions.length - 1);
+        if (isLast) { nextBtn.textContent = 'Submit ✓'; nextBtn.disabled = !isAnswered; nextBtn.style.opacity = isAnswered ? '1' : '0.4'; }
+        else { nextBtn.textContent = 'Next →'; nextBtn.disabled = !isAnswered; nextBtn.style.opacity = isAnswered ? '1' : '0.4'; }
+    }
+    function goToPrevious() { if (currentIndex > 0 && !isTransitioning) { clearAutoAdvance(); currentIndex--; isAnswered = false; renderQuestion(); } }
+    function goToNext() {
+        if (!isAnswered || isTransitioning) return;
+        clearAutoAdvance();
+        isAutoAdvancing = false;
+        const isLast = (currentIndex === questions.length - 1);
+        if (isLast) { submitPopup.classList.add('active'); return; }
+        if (currentIndex + 1 < questions.length) { currentIndex++; isAnswered = false; renderQuestion(); }
+    }
+    function submitQuiz() {
+        submitPopup.classList.remove('active');
+        showResult();
+    }
+    function cancelSubmit() { submitPopup.classList.remove('active'); }
+    function showResult() {
+        quizActive = false;
+        const total = questions.length;
+        const correct = score;
+        const wrong = total - correct;
+        const percent = Math.round((correct / total) * 100);
+        if (currentCategory) {
+            updateEvaluationStats(currentCategory, correct, wrong);
+            updateDailyTasks(correct, percent);
+            if (percent >= 90) { try { localStorage.setItem('quizzy_perfectionist', 'true'); } catch(e) {} }
+        }
+        totalQuizzesPlayed += 1;
+        totalCorrectAnswers += score;
+        saveStats();
+        updateUIWithUserData();
+        switchScreen('result');
+        finalScoreText.textContent = `${percent}%`;
+        correctCount.textContent = correct;
+        wrongCount.textContent = wrong;
+        totalCount.textContent = total;
+        let msg = 'Keep Practicing';
+        if (percent >= 90) msg = '🌟 Excellent!';
+        else if (percent >= 70) msg = '👏 Great Job!';
+        else if (percent >= 50) msg = '💪 Good Attempt!';
+        else msg = '📚 Keep Practicing!';
+        performanceMessage.textContent = msg;
+        renderExploreScreen();
+        renderAccountScreen();
+        setTimeout(() => {
+            showResultSummary(percent, correct, wrong, total);
+        }, 800);
+    }
+    function showExitPopup() { if (!quizActive || isTransitioning) return; clearAutoAdvance(); exitPopup.classList.add('active'); }
+    function hideExitPopup() { exitPopup.classList.remove('active'); }
+    function exitQuiz() { hideExitPopup(); if (quizActive) showResult(); }
+
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+    function goToSettings() { if (isTransitioning) return; const settings = loadSettings(); notificationToggle.checked = settings.notifications; kidModeToggle.checked = settings.kidMode; switchScreen('settings'); }
+    function goBackFromSettings() { if (isTransitioning) return; switchScreen('account'); }
+    function loadSettings() { try { const data = localStorage.getItem('quizzy_settings'); if (data) return JSON.parse(data); } catch (e) {} return { notifications: true, kidMode: false }; }
+    function saveSettings() { try { localStorage.setItem('quizzy_settings', JSON.stringify({ notifications: notificationToggle.checked, kidMode: kidModeToggle.checked })); applySettings(); } catch (e) {} }
+    function applySettings() {
+        const settings = loadSettings();
+        if (settings.kidMode) { document.body.classList.add('kid-mode'); document.querySelectorAll('.btn').forEach(btn => { btn.style.fontSize = '1.2rem'; btn.style.padding = '20px 14px'; }); document.querySelectorAll('.option').forEach(opt => { opt.style.fontSize = '1.05rem'; opt.style.padding = '18px 22px'; }); }
+        else { document.body.classList.remove('kid-mode'); document.querySelectorAll('.btn').forEach(btn => { btn.style.fontSize = ''; btn.style.padding = ''; }); document.querySelectorAll('.option').forEach(opt => { opt.style.fontSize = ''; opt.style.padding = ''; }); }
+    }
+
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
+    function goToExplore() { if (isTransitioning) return; quizActive = false; clearAutoAdvance(); switchScreen('explore'); navItems.forEach(i => i.classList.remove('active')); document.querySelector('[data-tab="explore"]').classList.add('active'); renderExploreScreen(); }
+    function goToAccount() { if (isTransitioning) return; quizActive = false; clearAutoAdvance(); switchScreen('account'); navItems.forEach(i => i.classList.remove('active')); document.querySelector('[data-tab="account"]').classList.add('active'); renderAccountScreen(); }
+    function goToEvaluation() { if (isTransitioning) return; quizActive = false; clearAutoAdvance(); switchScreen('evaluation'); navItems.forEach(i => i.classList.remove('active')); document.querySelector('[data-tab="evaluation"]').classList.add('active'); }
+    function goHome() { if (isTransitioning) return; quizActive = false; clearAutoAdvance(); switchScreen('welcome'); navItems.forEach(i => i.classList.remove('active')); document.querySelector('[data-tab="explore"]').classList.add('active'); updateAvatarBubble(); }
+
+    // ============================================================
+    // LOCAL STORAGE USER DATA
+    // ============================================================
+    function loadUserData() { try { const data = localStorage.getItem('quizzy_user_data'); if (data) return JSON.parse(data); } catch (e) {} return null; }
+    function saveUserData(data) { try { localStorage.setItem('quizzy_user_data', JSON.stringify(data)); } catch (e) {} }
+    function loadStats() { try { const stats = localStorage.getItem('quizzy_stats'); if (stats) { const parsed = JSON.parse(stats); totalQuizzesPlayed = parsed.totalQuizzesPlayed || 0; totalCorrectAnswers = parsed.totalCorrectAnswers || 0; } } catch (e) {} }
+    function saveStats() { try { localStorage.setItem('quizzy_stats', JSON.stringify({ totalQuizzesPlayed: totalQuizzesPlayed, totalCorrectAnswers: totalCorrectAnswers })); } catch (e) {} }
+
+    function updateUIWithUserData() {
+        const userData = loadUserData();
+        if (userData) {
+            const name = userData.fullName || 'Little Learner';
+            accountDisplayName.textContent = name;
+            welcomeMessage.textContent = `👋 Welcome back, ${name}! · 1000+ questions`;
+            document.title = `Quizzy · ${name}`;
+            updateGreeting();
+            updateAvatarBubble();
+            if (userData.dob) { 
+                const dobDate = new Date(userData.dob); 
+                accountDob.textContent = `🎂 ${dobDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`; 
+            } else accountDob.textContent = '';
+            
+            // Display avatar
+            displayAvatarInAccount(userData);
+            
+            // Fill profile form
+            fullName.value = userData.fullName || '';
+            userDob.value = userData.dob || '';
+            userGrade.value = userData.grade || '';
+            favSubject.value = userData.favSubject || '';
+            userFunFact.value = userData.funFact || '';
+            if (userData.photo) {
+                photoImage.src = userData.photo;
+                photoImage.style.display = 'block';
+                photoPlaceholder.style.display = 'none';
+                profilePhotoData = userData.photo;
+            } else {
+                photoImage.style.display = 'none';
+                photoPlaceholder.style.display = 'block';
+                photoPlaceholder.textContent = '📷';
+            }
+            if (userData.avatarStyle) {
+                selectedAvatarStyleId = userData.avatarStyle;
+                renderAvatarGrid(editAvatarGrid, selectedAvatarStyleId);
+            }
+        } else {
+            accountDisplayName.textContent = 'Little Learner';
+            welcomeMessage.textContent = 'Test your knowledge · 1000+ questions';
+            accountDob.textContent = '';
+            avatarImage.style.display = 'none';
+            avatarPlaceholder.style.display = 'flex';
+            avatarPlaceholder.style.alignItems = 'center';
+            avatarPlaceholder.style.justifyContent = 'center';
+            avatarPlaceholder.style.background = '#e8d5c4';
+            avatarPlaceholder.style.padding = '0';
+            avatarPlaceholder.innerHTML = '<span style="font-size:2.5rem;">🧒</span>';
+            updateGreeting();
+            updateAvatarBubble();
+        }
+        accountStats.textContent = `⭐ ${totalCorrectAnswers + starPoints} points · ${totalQuizzesPlayed} quizzes`;
+        updateVIPStatus();
+        if (checkBirthday() && !birthdayClaimed) {
+            birthdayBadge.style.display = 'block';
+            accountHeader.classList.add('birthday');
+        }
+    }
+
+    // ============================================================
+    // PROFILE FORM (EDIT)
+    // ============================================================
+    function openProfileForm() {
+        const userData = loadUserData();
+        if (userData) {
+            fullName.value = userData.fullName || '';
+            userDob.value = userData.dob || '';
+            userGrade.value = userData.grade || '';
+            favSubject.value = userData.favSubject || '';
+            userFunFact.value = userData.funFact || '';
+            if (userData.photo) {
+                photoImage.src = userData.photo;
+                photoImage.style.display = 'block';
+                photoPlaceholder.style.display = 'none';
+                profilePhotoData = userData.photo;
+            } else {
+                photoImage.style.display = 'none';
+                photoPlaceholder.style.display = 'block';
+                photoPlaceholder.textContent = '📷';
+            }
+            if (userData.avatarStyle) {
+                selectedAvatarStyleId = userData.avatarStyle;
+                renderAvatarGrid(editAvatarGrid, selectedAvatarStyleId);
+            } else {
+                renderAvatarGrid(editAvatarGrid, 'lorelei');
+            }
+        } else {
+            fullName.value = ''; userDob.value = ''; userGrade.value = ''; favSubject.value = ''; userFunFact.value = '';
+            photoImage.style.display = 'none'; photoPlaceholder.style.display = 'block'; photoPlaceholder.textContent = '📷';
+            renderAvatarGrid(editAvatarGrid, 'lorelei');
+        }
+        document.getElementById('profileFormOverlay').classList.add('active');
+    }
+    function closeProfileForm() { document.getElementById('profileFormOverlay').classList.remove('active'); }
+
+    // Photo upload for profile edit
+    photoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                tempImageFile = dataUrl;
+                openCropModalForEdit(dataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+        this.value = '';
+    });
+
+    function openCropModalForEdit(imageSrc) {
+        cropImage.src = imageSrc;
+        cropModal.classList.add('active');
+        cropImage.onload = function() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 1,
+                viewMode: 1,
+                autoCropArea: 0.8,
+                movable: true,
+                zoomable: true,
+                rotatable: false,
+                scalable: false,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                dragMode: 'move'
+            });
+        };
+        if (cropImage.complete) { cropImage.onload(); }
+        cropConfirmBtn.onclick = function() {
+            if (!cropper) return;
+            const canvas = cropper.getCroppedCanvas({ width: 300, height: 300, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+            if (!canvas) { showToast('⚠️', 'Error', 'Could not crop image.'); return; }
+            const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            photoImage.src = croppedDataUrl;
+            photoImage.style.display = 'block';
+            photoPlaceholder.style.display = 'none';
+            profilePhotoData = croppedDataUrl;
+            closeCropModal();
+            showToast('✂️', 'Cropped!', 'Your photo has been cropped successfully.');
+        };
+    }
+
+    photoPreview.addEventListener('click', function() { photoInput.click(); });
+
+    profileForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Get selected style from grid
+        const selected = editAvatarGrid.querySelector('.avatar-option.selected');
+        const styleId = selected ? selected.dataset.styleId : selectedAvatarStyleId;
+        const userData = {
+            fullName: fullName.value.trim() || 'Little Learner',
+            dob: userDob.value || '',
+            grade: userGrade.value.trim() || 'Not specified',
+            favSubject: favSubject.value || '',
+            funFact: userFunFact.value.trim() || 'I love learning!',
+            photo: profilePhotoData || (loadUserData() ? loadUserData().photo : null),
+            avatarStyle: styleId
+        };
+        saveUserData(userData);
+        updateUIWithUserData();
+        showToast('👋', 'Welcome!', `Profile saved successfully!\nHello ${userData.fullName}!`);
+        closeProfileForm();
+        renderAccountScreen();
+        renderExploreScreen();
+        if (checkBirthday() && !birthdayClaimed) {
+            setTimeout(() => showBirthdayPopup(), 500);
+        }
+    });
+    formCancelBtn.addEventListener('click', closeProfileForm, { passive: true });
+
+    // ============================================================
+    // BIRTHDAY EVENT LISTENERS
+    // ============================================================
+    birthdayLaterBtn.addEventListener('click', function() {
+        birthdayPopup.classList.remove('active');
+    }, { passive: true });
+
+    birthdayClaimBtn.addEventListener('click', claimBirthdayGift, { passive: true });
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+    profileBtn.addEventListener('click', openProfileForm, { passive: true });
+    statsBtn.addEventListener('click', goToEvaluation, { passive: true });
+    settingsMenuBtn.addEventListener('click', goToSettings, { passive: true });
+    settingsCloseBtn.addEventListener('click', goBackFromSettings, { passive: true });
+    notificationToggle.addEventListener('change', saveSettings, { passive: true });
+    kidModeToggle.addEventListener('change', saveSettings, { passive: true });
+    nextBtn.addEventListener('click', goToNext, { passive: true });
+    prevBtn.addEventListener('click', goToPrevious, { passive: true });
+    submitYesBtn.addEventListener('click', submitQuiz, { passive: true });
+    submitNoBtn.addEventListener('click', cancelSubmit, { passive: true });
+    claimYesBtn.addEventListener('click', function() { if (pendingClaimTaskId) { claimTask(pendingClaimTaskId); pendingClaimTaskId = null; } }, { passive: true });
+    claimNoBtn.addEventListener('click', function() { claimPopup.classList.remove('active'); pendingClaimTaskId = null; }, { passive: true });
+    achDetailCloseBtn.addEventListener('click', closeAchievementDetail, { passive: true });
+    achievementDetailPopup.addEventListener('click', function(e) { if (e.target === this) closeAchievementDetail(); }, { passive: true });
+    cropCancelBtn.addEventListener('click', closeCropModal, { passive: true });
+    startBtn.addEventListener('click', goToExplore, { passive: true });
+    homeBtn.addEventListener('click', goHome, { passive: true });
+    restartBtn.addEventListener('click', function() { if (currentCategory) startCategoryQuiz(currentCategory); else goToExplore(); }, { passive: true });
+    exitBtn.addEventListener('click', showExitPopup, { passive: true });
+    resumeBtn.addEventListener('click', hideExitPopup, { passive: true });
+    exitConfirmBtn.addEventListener('click', exitQuiz, { passive: true });
+    exitPopup.addEventListener('click', function(e) { if (e.target === this) hideExitPopup(); }, { passive: true });
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            navItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            if (tab === 'explore') goToExplore();
+            else if (tab === 'evaluation') goToEvaluation();
+            else if (tab === 'account') goToAccount();
+        }, { passive: true });
+    });
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (this.dataset.disabled === 'true') e.preventDefault();
+            this.dataset.disabled = 'true';
+            setTimeout(() => { this.dataset.disabled = 'false'; }, 400);
+        }, { passive: false });
+    });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    setTimeout(() => { loadingOverlay.classList.add('hidden'); }, 2500);
+    setTimeout(() => {
+        splashOverlay.classList.remove('hidden');
+        setTimeout(() => { splashOverlay.classList.add('hidden'); }, 3000);
+    }, 2500);
+
+    // Render avatar grids
+    renderAvatarGrid(onboardAvatarGrid, 'lorelei');
+    renderAvatarGrid(editAvatarGrid, 'lorelei');
+
+    setTimeout(() => {
+        if (!isUserRegistered()) {
+            onboardingOverlay.classList.add('active');
+            switchScreen('welcome');
+        } else {
+            switchScreen('welcome');
+            updateUIWithUserData();
+            renderExploreScreen();
+            renderAccountScreen();
+            if (checkBirthday()) {
+                const claimed = localStorage.getItem('quizzy_birthday_claimed');
+                if (claimed !== new Date().toDateString()) {
+                    setTimeout(() => showBirthdayPopup(), 1500);
+                }
+            }
+        }
+        bottomNav.classList.remove('show');
+    }, 3800);
+
+    loadStats();
+    loadStarPoints();
+    renderCategories();
+    document.querySelector('.badge-row .badge:first-child').textContent = `1000+ questions`;
+    applySettings();
+    updateEvaluationScreen();
+    setInterval(updateGreeting, 60000);
+    const faces = ['🧑‍🎓','👨‍🎓','👩‍🎓','🧑‍🏫','👨‍🏫','👩‍🏫','🧑‍💻','👨‍💻','👩‍💻'];
+    setInterval(() => { avatarFace.textContent = faces[Math.floor(Math.random() * faces.length)]; }, 4000);
+
+    console.log('✅ Quizzy · DiceBear Avatars Integrated Successfully! 8 unique styles · by Insha Mahfooz');
+})();
+</script>
+</body>
+</html>
